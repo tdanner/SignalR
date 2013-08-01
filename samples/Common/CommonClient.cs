@@ -3,6 +3,7 @@ using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client.Hubs;
+using Microsoft.AspNet.SignalR.Client.Transports;
 
 namespace Microsoft.AspNet.SignalR.Client.Samples
 {
@@ -40,8 +41,8 @@ namespace Microsoft.AspNet.SignalR.Client.Samples
 
             var hubProxy = hubConnection.CreateHubProxy("HubConnectionAPI");
             hubProxy.On<string>("displayMessage", (data) => hubConnection.TraceWriter.WriteLine(data));
-            
-            await hubConnection.Start();
+
+            await hubConnection.Start(new LongPollingTransport());
             hubConnection.TraceWriter.WriteLine("transport.Name={0}", hubConnection.Transport.Name);
 
             await hubProxy.Invoke("DisplayMessageCaller", "Hello Caller!");
