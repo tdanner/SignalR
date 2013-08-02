@@ -260,6 +260,21 @@
     <Compile Include="Default.aspx.designer.cs">
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
+    <Compile Include="GlimpseMockup\GlimpseAppBuilder.cs" />
+    <Compile Include="GlimpseMockup\GlimpseAppSink.cs" />
+    <Compile Include="GlimpseMockup\GlimpseAppStorage.cs" />
+    <Compile Include="GlimpseMockup\GlimpseExtensions.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseLeadingMiddleware.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseLeadingOptions.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseObservingMiddleware.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseObservingOptions.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseTrailingMiddleware.cs" />
+    <Compile Include="GlimpseMockup\Middleware\GlimpseTrailingOptions.cs" />
+    <Compile Include="GlimpseMockup\Model\GlimpseModelNode.cs" />
+    <Compile Include="GlimpseMockup\Model\GlimpseModelPipeline.cs" />
+    <Compile Include="GlimpseMockup\Recording\GlimpseMessage.cs" />
+    <Compile Include="GlimpseMockup\Recording\GlimpseScope.cs" />
+    <Compile Include="GlimpseMockup\Recording\IGlimpseSink.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>

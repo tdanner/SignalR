@@ -17,7 +17,7 @@ namespace Microsoft.AspNet.SignalR.Client.WP8.Samples
             
             // Windows Phone emulator runs in a separate virtual machine therefore you can't use a url containing localhost
             var task = client.RunAsync("http://signalr-test1.cloudapp.net:82/");
-            //var task = client.RunAsync("http://");
+            //var task = client.RunAsync("http://localhost:40476");
             // Sample code to localize the ApplicationBar
             //BuildLocalizedApplicationBar();
         }
