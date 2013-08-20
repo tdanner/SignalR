@@ -4,6 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client.Hubs;
+using Microsoft.AspNet.SignalR.Client.Transports;
 
 namespace Microsoft.AspNet.SignalR.Client.Samples
 {
@@ -20,7 +21,7 @@ namespace Microsoft.AspNet.SignalR.Client.Samples
         {
             try
             {
-                await RunHubConnectionAPI(url);
+                await RunRace(url);
             }
             catch (HttpClientException httpClientException)
             {
@@ -32,6 +33,37 @@ namespace Microsoft.AspNet.SignalR.Client.Samples
                 _traceWriter.WriteLine("Exception: {0}", exception);
                 throw;
             }
+        }
+
+        private async Task RunRace(string url)
+        {
+            var hubConnection = new HubConnection(url);
+            hubConnection.TraceWriter = _traceWriter;
+
+            var hubProxy = hubConnection.CreateHubProxy("HubConnectionAPI");
+            hubProxy.On<string>("displayMessage", (data) => hubConnection.TraceWriter.WriteLine(data));
+
+            await hubConnection.Start(new LongPollingTransport());
+            hubConnection.TraceWriter.WriteLine("transport.Name={0}", hubConnection.Transport.Name);
+
+            Task.Factory.StartNew(() =>
+                {
+                    Thread.Sleep(2000);
+                    hubConnection.Stop();
+                });
+
+            while(true)
+            {
+                try
+                {
+                    hubProxy.Invoke("DisplayMessageCaller", "Hello Caller!");
+                }
+                catch
+                {
+                    break;
+                }
+            }
+
         }
 
         private async Task RunHubConnectionAPI(string url)
