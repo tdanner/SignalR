@@ -31,6 +31,12 @@ namespace Microsoft.AspNet.SignalR.Hubs
         public string Id { get; set; }
 
         /// <summary>
+        /// The progress update of the invocation.
+        /// </summary>
+        [JsonProperty("P", NullValueHandling = NullValueHandling.Ignore)]
+        public object Progress { get; set; }
+
+        /// <summary>
         /// The exception that occurs as a result of invoking the hub method.
         /// </summary>
         [JsonProperty("E", NullValueHandling = NullValueHandling.Ignore)]
