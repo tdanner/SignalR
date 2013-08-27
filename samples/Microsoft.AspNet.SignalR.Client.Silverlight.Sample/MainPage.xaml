@@ -8,6 +8,12 @@
     d:DesignHeight="300" d:DesignWidth="800">
 
     <Grid x:Name="LayoutRoot" Background="White">
-        <ListBox ItemsSource="{Binding Items}" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <ListBox ItemsSource="{Binding Items}" Grid.Row="0"/>
+        <Button x:Name="btSend" Click="btSend_Click" Grid.Row="1" Content="Send"/>
     </Grid>
+    
 </UserControl>

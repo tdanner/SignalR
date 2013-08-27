@@ -9,6 +9,8 @@ namespace Microsoft.AspNet.SignalR.Client.Silverlight.Sample
 {
     public partial class MainPage : UserControl
     {
+        Connection connection;
+
         // Constructor
         public MainPage()
         {
@@ -17,7 +19,7 @@ namespace Microsoft.AspNet.SignalR.Client.Silverlight.Sample
             // Set the data context of the listbox control to the sample data
             DataContext = App.ViewModel;
 
-            var connection = new Connection("http://localhost:40476/raw-connection");
+            connection = new Connection("http://localhost:40476/raw-connection");
 
             connection.Received += data =>
             {
@@ -32,7 +34,7 @@ namespace Microsoft.AspNet.SignalR.Client.Silverlight.Sample
                 Dispatcher.BeginInvoke(() =>
                 {
                     var aggEx = (AggregateException)ex;
-                    App.ViewModel.Items.Add(aggEx.InnerExceptions[0].Message);
+                    App.ViewModel.Items.Add(aggEx.InnerException.ToString());
                 });
             };
 
@@ -45,7 +47,7 @@ namespace Microsoft.AspNet.SignalR.Client.Silverlight.Sample
             };
 
             var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            connection.Start().ContinueWith(task =>
+            connection.Start(new Microsoft.AspNet.SignalR.Client.Transports.LongPollingTransport()).ContinueWith(task =>
             {
                 var ex = task.Exception.InnerExceptions[0];
                 App.ViewModel.Items.Add(ex.Message);
@@ -53,6 +55,11 @@ namespace Microsoft.AspNet.SignalR.Client.Silverlight.Sample
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
             scheduler);
+        }
+
+        private void btSend_Click(object sender, RoutedEventArgs e)
+        {
+            connection.Send("This is a simple test");
         }
     }
 }
