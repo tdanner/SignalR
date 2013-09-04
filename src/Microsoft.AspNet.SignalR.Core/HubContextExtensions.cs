@@ -1,8 +1,7 @@
 ﻿using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Hubs;
-using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.AspNet.SignalR
 {
@@ -28,12 +27,9 @@ namespace Microsoft.AspNet.SignalR
 
             return context.Connection.Receive(async message =>
             {
-                using (var reader = new JsonTextReader(new StringReader(message)))
-                {
-                    var invocation = context.Serializer.Deserialize<ClientHubInvocation>(reader);
+                var invocation = message.ToObject<ClientHubInvocation>(context.Serializer);
 
-                    await callback(invocation);
-                }
+                await callback(invocation);
             });
         }
     }

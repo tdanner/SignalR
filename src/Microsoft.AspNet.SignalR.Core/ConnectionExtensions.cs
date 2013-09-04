@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Transports;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.AspNet.SignalR
 {
@@ -91,9 +92,9 @@ namespace Microsoft.AspNet.SignalR
         /// <param name="connection"></param>
         /// <param name="callback"></param>
         /// <returns></returns>
-        public static IDisposable Receive(this ITransportConnection connection, Func<string, Task> callback)
+        public static IDisposable Receive(this ITransportConnection connection, Func<JToken, Task> callback)
         {
-            return Receive(connection, (message, state) => ((Func<string, Task>)state).Invoke(message), callback);
+            return Receive(connection, (message, state) => ((Func<JToken, Task>)state).Invoke(message), callback);
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace Microsoft.AspNet.SignalR
         /// <param name="callback"></param>
         /// <param name="state"></param>
         /// <returns></returns>
-        public static IDisposable Receive(this ITransportConnection connection, Func<string, object, Task> callback, object state)
+        public static IDisposable Receive(this ITransportConnection connection, Func<JToken, object, Task> callback, object state)
         {
             if (connection == null)
             {
@@ -137,8 +138,10 @@ namespace Microsoft.AspNet.SignalR
                         {
                             continue;
                         }
-
-                        await callback(message.GetString(), state);
+                        
+                        // Create a JRaw object over the raw JSON string
+                        var raw = JToken.Parse(message.GetString());
+                        await callback(raw, state);
                     }
                 }
 

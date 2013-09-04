@@ -1885,7 +1885,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                 using (connection1)
                 {
-                    var wh1 = new ManualResetEventSlim(initialState: false);
+                    var wh1 = new ManualResetEventSlim();
+                    var wh2 = new ManualResetEventSlim();
 
                     var hub1 = connection1.CreateHubProxy("SendToSome");
 
@@ -1893,10 +1894,25 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     hub1.On("send", wh1.Set);
 
-                    hubContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
-                    hubContext.Clients.Group("Foo").send();
+                    IDisposable subscription = hubContext.Subscribe(invocation =>
+                    {
+                        if (invocation.Method == "send")
+                        {
+                            wh2.Set();
+                        }
 
-                    Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        return TaskAsyncHelper.Empty;
+                    });
+
+                    using (subscription)
+                    {
+                        hubContext.Groups.Add(hubContext.Connection.ConnectionId, "Foo").Wait();
+                        hubContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
+                        hubContext.Clients.Group("Foo").send();
+
+                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                    }
                 }
             }
         }
@@ -1970,7 +1986,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                 using (connection1)
                 {
-                    var wh1 = new ManualResetEventSlim(initialState: false);
+                    var wh1 = new ManualResetEventSlim();
+                    var wh2 = new ManualResetEventSlim();
 
                     var hub1 = connection1.CreateHubProxy("SendToSome");
 
@@ -1978,10 +1995,25 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     hub1.On("send", wh1.Set);
 
-                    hubContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
-                    hubContext.Clients.Groups(new[] { "Foo" }).send();
+                    IDisposable subscription = hubContext.Subscribe(invocation =>
+                    {
+                        if (invocation.Method == "send")
+                        {
+                            wh2.Set();
+                        }
 
-                    Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        return TaskAsyncHelper.Empty;
+                    });
+
+                    using (subscription)
+                    {
+                        hubContext.Groups.Add(hubContext.Connection.ConnectionId, "Foo").Wait();
+                        hubContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
+                        hubContext.Clients.Groups(new[] { "Foo" }).send();
+
+                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                    }
                 }
             }
         }
@@ -2007,17 +2039,32 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                 using (connection1)
                 {
-                    var wh1 = new ManualResetEventSlim(initialState: false);
+                    var wh1 = new ManualResetEventSlim();
+                    var wh2 = new ManualResetEventSlim();
 
                     var hub1 = connection1.CreateHubProxy("SendToSome");
 
                     connection1.Start(host).Wait();
 
                     hub1.On("send", wh1.Set);
+                    IDisposable subscription = hubContext.Subscribe(invocation =>
+                    {
+                        if (invocation.Method == "send")
+                        {
+                            wh2.Set();
+                        }
 
-                    hubContext.Clients.Client(connection1.ConnectionId).send();
+                        return TaskAsyncHelper.Empty;
+                    });
 
-                    Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                    using (subscription)
+                    {
+                        hubContext.Clients.Client(connection1.ConnectionId).send();
+                        hubContext.Clients.Client(hubContext.Connection.ConnectionId).send();
+
+                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                    }
                 }
             }
         }
@@ -2043,17 +2090,32 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                 using (connection1)
                 {
-                    var wh1 = new ManualResetEventSlim(initialState: false);
+                    var wh1 = new ManualResetEventSlim();
+                    var wh2 = new ManualResetEventSlim();
 
                     var hub1 = connection1.CreateHubProxy("SendToSome");
 
                     connection1.Start(host).Wait();
 
                     hub1.On("send", wh1.Set);
+                    IDisposable subscription = hubContext.Subscribe(invocation =>
+                    {
+                        if (invocation.Method == "send")
+                        {
+                            wh2.Set();
+                        }
 
-                    hubContext.Clients.Clients(new[] { connection1.ConnectionId }).send();
+                        return TaskAsyncHelper.Empty;
+                    });
 
-                    Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                    using (subscription)
+                    {
+                        hubContext.Clients.Clients(new[] { connection1.ConnectionId }).send();
+                        hubContext.Clients.Clients(new[] { hubContext.Connection.ConnectionId }).send();
+
+                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                    }
                 }
             }
         }
@@ -2081,8 +2143,9 @@ namespace Microsoft.AspNet.SignalR.Tests
                 using (connection1)
                 using (connection2)
                 {
-                    var wh1 = new ManualResetEventSlim(initialState: false);
-                    var wh2 = new ManualResetEventSlim(initialState: false);
+                    var wh1 = new ManualResetEventSlim();
+                    var wh2 = new ManualResetEventSlim();
+                    var wh3 = new ManualResetEventSlim();
 
                     var hub1 = connection1.CreateHubProxy("SendToSome");
                     var hub2 = connection2.CreateHubProxy("SendToSome");
@@ -2092,11 +2155,24 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     hub1.On("send", wh1.Set);
                     hub2.On("send", wh2.Set);
+                    IDisposable subscription = hubContext.Subscribe(invocation =>
+                    {
+                        if (invocation.Method == "send")
+                        {
+                            wh3.Set();
+                        }
 
-                    hubContext.Clients.All.send();
+                        return TaskAsyncHelper.Empty;
+                    });
 
-                    Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
-                    Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                    using (subscription)
+                    {
+                        hubContext.Clients.All.send();
+
+                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                        Assert.True(wh3.Wait(TimeSpan.FromSeconds(10)));
+                    }
                 }
             }
         }

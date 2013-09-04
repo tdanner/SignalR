@@ -116,7 +116,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     using (connection1)
                     {
-                        var wh1 = new ManualResetEventSlim(initialState: false);
+                        var wh1 = new ManualResetEventSlim();
+                        var wh2 = new ManualResetEventSlim();
 
                         connection1.Start(host).Wait();
 
@@ -126,9 +127,23 @@ namespace Microsoft.AspNet.SignalR.Tests
                             wh1.Set();
                         };
 
-                        connectionContext.Connection.Send(connection1.ConnectionId, "yay");
+                        IDisposable subscription = connectionContext.Connection.Receive(message =>
+                        {
+                            string value = message.Value<string>();
+                            Assert.Equal("yay", value);
+                            wh2.Set();
 
-                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            return TaskAsyncHelper.Empty;
+                        });
+
+                        using (subscription)
+                        {
+                            connectionContext.Connection.Send(connection1.ConnectionId, "yay");
+                            connectionContext.Connection.Send(connectionContext.Connection.ConnectionId, "yay");
+
+                            Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                        }
                     }
                 }
             }
@@ -154,7 +169,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     using (connection1)
                     {
-                        var wh1 = new ManualResetEventSlim(initialState: false);
+                        var wh1 = new ManualResetEventSlim();
+                        var wh2 = new ManualResetEventSlim();
 
                         connection1.Start(host).Wait();
 
@@ -164,9 +180,23 @@ namespace Microsoft.AspNet.SignalR.Tests
                             wh1.Set();
                         };
 
-                        connectionContext.Connection.Send(new[] { connection1.ConnectionId }, "yay");
+                        IDisposable subscription = connectionContext.Connection.Receive(message =>
+                        {
+                            string value = message.Value<string>();
+                            Assert.Equal("yay", value);
+                            wh2.Set();
 
-                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            return TaskAsyncHelper.Empty;
+                        });
+
+                        using (subscription)
+                        {
+                            connectionContext.Connection.Send(new[] { connection1.ConnectionId }, "yay");
+                            connectionContext.Connection.Send(new[] { connectionContext.Connection.ConnectionId }, "yay");
+
+                            Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                        }
                     }
                 }
             }
@@ -192,7 +222,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     using (connection1)
                     {
-                        var wh1 = new ManualResetEventSlim(initialState: false);
+                        var wh1 = new ManualResetEventSlim();
+                        var wh2 = new ManualResetEventSlim();
 
                         connection1.Start(host).Wait();
 
@@ -202,10 +233,24 @@ namespace Microsoft.AspNet.SignalR.Tests
                             wh1.Set();
                         };
 
-                        connectionContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
-                        connectionContext.Groups.Send("Foo", "yay");
+                        IDisposable subscription = connectionContext.Connection.Receive(message =>
+                        {
+                            string value = message.Value<string>();
+                            Assert.Equal("yay", value);
+                            wh2.Set();
 
-                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            return TaskAsyncHelper.Empty;
+                        });
+
+                        using (subscription)
+                        {
+                            connectionContext.Groups.Add(connectionContext.Connection.ConnectionId, "Foo").Wait();
+                            connectionContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
+                            connectionContext.Groups.Send("Foo", "yay");
+
+                            Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                        }
                     }
                 }
             }
@@ -231,7 +276,8 @@ namespace Microsoft.AspNet.SignalR.Tests
 
                     using (connection1)
                     {
-                        var wh1 = new ManualResetEventSlim(initialState: false);
+                        var wh1 = new ManualResetEventSlim();
+                        var wh2 = new ManualResetEventSlim();
 
                         connection1.Start(host).Wait();
 
@@ -241,10 +287,24 @@ namespace Microsoft.AspNet.SignalR.Tests
                             wh1.Set();
                         };
 
-                        connectionContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
-                        connectionContext.Groups.Send(new[] { "Foo", "Bar" }, "yay");
+                        IDisposable subscription = connectionContext.Connection.Receive(message =>
+                        {
+                            string value = message.Value<string>();
+                            Assert.Equal("yay", value);
+                            wh2.Set();
 
-                        Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            return TaskAsyncHelper.Empty;
+                        });
+
+                        using (subscription)
+                        {
+                            connectionContext.Groups.Add(connection1.ConnectionId, "Foo").Wait();
+                            connectionContext.Groups.Add(connectionContext.Connection.ConnectionId, "Foo").Wait();
+                            connectionContext.Groups.Send(new[] { "Foo", "Bar" }, "yay");
+
+                            Assert.True(wh1.Wait(TimeSpan.FromSeconds(10)));
+                            Assert.True(wh2.Wait(TimeSpan.FromSeconds(10)));
+                        }
                     }
                 }
             }
