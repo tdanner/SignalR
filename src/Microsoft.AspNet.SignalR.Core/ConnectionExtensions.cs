@@ -141,7 +141,7 @@ namespace Microsoft.AspNet.SignalR
                         
                         // Create a JRaw object over the raw JSON string
                         var raw = JToken.Parse(message.GetString());
-                        await callback(raw, state);
+                        await callback(raw, innerState);
                     }
                 }
 
