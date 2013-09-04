@@ -84,9 +84,15 @@ namespace Microsoft.AspNet.SignalR
             return connection.Send(message);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="callback"></param>
+        /// <returns></returns>
         public static IDisposable Receive(this IDuplexConnection connection, Func<string, Task> callback)
         {
-            return Receive(connection, (messages, state) => callback(messages), null); ;
+            return Receive(connection, (message, state) => ((Func<string, Task>)state).Invoke(message), callback);
         }
 
         /// <summary>
