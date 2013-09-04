@@ -4,10 +4,10 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 {
     internal class PersistentConnectionContext : IPersistentConnectionContext
     {
-        public PersistentConnectionContext(IDuplexConnection connection, IConnectionGroupManager groupManager)
+        public PersistentConnectionContext(IDuplexConnection connection)
         {
             Connection = connection;
-            Groups = groupManager;
+            Groups = new GroupManager(connection, PrefixHelper.GetPersistentConnectionGroupName(connection.DefaultSignal));
         }
 
         public IDuplexConnection Connection { get; private set; }

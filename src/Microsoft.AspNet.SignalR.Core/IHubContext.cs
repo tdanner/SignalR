@@ -10,7 +10,11 @@ namespace Microsoft.AspNet.SignalR
     /// </summary>
     public interface IHubContext
     {
-        string ConnectionId { get; }
+        /// <summary>
+        /// Gets the <see cref="IDuplexConnection" /> for the <see cref="IHub" />.
+        /// </summary>
+        IDuplexConnection Connection { get; }
+
         /// <summary>
         /// Encapsulates all information about a SignalR connection for an <see cref="IHub"/>.
         /// </summary>

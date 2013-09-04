@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
+using Microsoft.AspNet.SignalR.Transports;
 
 namespace Microsoft.AspNet.SignalR
 {
@@ -90,7 +91,7 @@ namespace Microsoft.AspNet.SignalR
         /// <param name="connection"></param>
         /// <param name="callback"></param>
         /// <returns></returns>
-        public static IDisposable Receive(this IDuplexConnection connection, Func<string, Task> callback)
+        public static IDisposable Receive(this ITransportConnection connection, Func<string, Task> callback)
         {
             return Receive(connection, (message, state) => ((Func<string, Task>)state).Invoke(message), callback);
         }
@@ -102,8 +103,18 @@ namespace Microsoft.AspNet.SignalR
         /// <param name="callback"></param>
         /// <param name="state"></param>
         /// <returns></returns>
-        public static IDisposable Receive(this IDuplexConnection connection, Func<string, object, Task> callback, object state)
+        public static IDisposable Receive(this ITransportConnection connection, Func<string, object, Task> callback, object state)
         {
+            if (connection == null)
+            {
+                throw new ArgumentNullException("connection");
+            }
+
+            if (callback == null)
+            {
+                throw new ArgumentNullException("callback");
+            }
+
             return connection.Receive(null, async (response, innerState) =>
             {
                 // Do nothing if we get one of these commands
@@ -133,7 +144,7 @@ namespace Microsoft.AspNet.SignalR
 
                 return true;
             },
-            100,
+            10,
             state);
         }
     }

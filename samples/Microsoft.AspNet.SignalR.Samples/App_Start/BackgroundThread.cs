@@ -20,6 +20,16 @@ namespace Microsoft.AspNet.SignalR.Samples
                     Debug.WriteLine("Received a message on the streaming connection: {0}", (object)message);
                 });
 
+                hubContext.Connection.Receive(async message =>
+                {
+                    Debug.WriteLine("Received hub invocation: {0}", (object)message);
+                });
+
+                hubContext.Subscribe(async invocation =>
+                {
+                    Debug.WriteLine("Invoked method {0} on {1}", invocation.Method, invocation.Hub);
+                });
+
                 while (true)
                 {
                     try
