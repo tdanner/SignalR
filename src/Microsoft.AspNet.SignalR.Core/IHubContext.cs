@@ -10,6 +10,7 @@ namespace Microsoft.AspNet.SignalR
     /// </summary>
     public interface IHubContext
     {
+        string ConnectionId { get; }
         /// <summary>
         /// Encapsulates all information about a SignalR connection for an <see cref="IHub"/>.
         /// </summary>

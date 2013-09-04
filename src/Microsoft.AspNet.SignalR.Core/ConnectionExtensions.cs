@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.AspNet.SignalR.Messaging;
 
 namespace Microsoft.AspNet.SignalR
 {
@@ -81,6 +82,53 @@ namespace Microsoft.AspNet.SignalR
                                                 PrefixHelper.GetPrefixedConnectionIds(excludeConnectionIds));
 
             return connection.Send(message);
+        }
+
+        public static IDisposable Receive(this IDuplexConnection connection, Func<string, Task> callback)
+        {
+            return Receive(connection, (messages, state) => callback(messages), null); ;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="callback"></param>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        public static IDisposable Receive(this IDuplexConnection connection, Func<string, object, Task> callback, object state)
+        {
+            return connection.Receive(null, async (response, innerState) =>
+            {
+                // Do nothing if we get one of these commands
+                if (response.Initializing ||
+                    response.Terminal ||
+                    response.Aborted ||
+                    response.Disconnect)
+                {
+                    return true;
+                }
+
+                for (int i = 0; i < response.Messages.Count; i++)
+                {
+                    ArraySegment<Message> segment = response.Messages[i];
+                    for (int j = segment.Offset; j < segment.Offset + segment.Count; j++)
+                    {
+                        Message message = segment.Array[j];
+
+                        if (message.IsAck || message.IsCommand)
+                        {
+                            continue;
+                        }
+
+                        await callback(message.GetString(), state);
+                    }
+                }
+
+                return true;
+            },
+            100,
+            state);
         }
     }
 }

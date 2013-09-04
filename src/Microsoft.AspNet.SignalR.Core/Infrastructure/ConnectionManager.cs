@@ -56,7 +56,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
             string rawConnectionName = type.FullName;
             string connectionName = PrefixHelper.GetPersistentConnectionName(rawConnectionName);
-            IConnection connection = GetConnectionCore(connectionName);
+            IDuplexConnection connection = GetConnectionCore(connectionName);
 
             return new PersistentConnectionContext(connection, new GroupManager(connection, PrefixHelper.GetPersistentConnectionGroupName(rawConnectionName)));
         }
@@ -91,7 +91,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
             return new HubContext(connection, pipelineInvoker, hubName);
         }
 
-        internal Connection GetConnectionCore(string connectionName)
+        public IDuplexConnection GetConnectionCore(string connectionName)
         {
             IList<string> signals = connectionName == null ? ListHelper<string>.Empty : new[] { connectionName };
 

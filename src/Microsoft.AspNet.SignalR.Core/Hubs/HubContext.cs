@@ -8,8 +8,9 @@ namespace Microsoft.AspNet.SignalR.Hubs
 {
     internal class HubContext : IHubContext
     {
-        public HubContext(IConnection connection, IHubPipelineInvoker invoker, string hubName)
+        public HubContext(IDuplexConnection connection, IHubPipelineInvoker invoker, string hubName)
         {
+            ConnectionId = connection.ConnectionId;
             Clients = new HubConnectionContextBase(connection, invoker, hubName);
             Groups = new GroupManager(connection, PrefixHelper.GetHubGroupName(hubName));
         }
@@ -17,5 +18,7 @@ namespace Microsoft.AspNet.SignalR.Hubs
         public IHubConnectionContext Clients { get; private set; }
 
         public IGroupManager Groups { get; private set; }
+
+        public string ConnectionId { get; private set; }
     }
 }
