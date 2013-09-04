@@ -83,6 +83,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
         {
             var hubManager = _resolver.Resolve<IHubManager>();
             var pipelineInvoker = _resolver.Resolve<IHubPipelineInvoker>();
+            var jsonSerializer = _resolver.Resolve<JsonSerializer>();
 
             var descriptor = hubManager.EnsureHub(hubName,
                                                   _counters.ErrorsHubResolutionTotal,
@@ -95,7 +96,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
             var connection = GetDuplexConnection(connectionName: null, connectionId: connectionId, signals: signals);
 
-            return new HubContext(connection, pipelineInvoker, hubName);
+            return new HubContext(connection, pipelineInvoker, hubName, jsonSerializer);
         }
 
         public IDuplexConnection GetDuplexConnection(string connectionName, string connectionId, IList<string> signals)

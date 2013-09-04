@@ -16,7 +16,7 @@ namespace Microsoft.AspNet.SignalR.Tests.Core.Hubs
             var counters = new PerformanceCounterManager();
             var connection = new Mock<IDuplexConnection>();
             var invoker = new Mock<IHubPipelineInvoker>();
-            var hubContext = new HubContext(connection.Object, invoker.Object, "test");
+            var hubContext = new HubContext(connection.Object, invoker.Object, "test", serializer);
             
             Assert.Throws<ArgumentException>(() => hubContext.Clients.Group(null));
         }
@@ -29,7 +29,7 @@ namespace Microsoft.AspNet.SignalR.Tests.Core.Hubs
             var connection = new Mock<IDuplexConnection>();
             var invoker = new Mock<IHubPipelineInvoker>();
 
-            var hubContext = new HubContext(connection.Object, invoker.Object, "test");
+            var hubContext = new HubContext(connection.Object, invoker.Object, "test", serializer);
 
             Assert.Throws<ArgumentException>(() => hubContext.Clients.Client(null));
         }
