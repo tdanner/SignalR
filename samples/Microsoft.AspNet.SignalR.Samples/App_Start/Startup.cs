@@ -59,7 +59,7 @@ namespace Microsoft.AspNet.SignalR.Samples
                     // Whenever a message is sent to this connection we're going to write it to the response
                     IDisposable disposable = connectionContext.Connection.Receive(async message =>
                     {
-                        await context.Response.WriteAsync(message);
+                        await context.Response.WriteAsync(message.ToString());
                         await context.Response.Body.FlushAsync();
                     });
 

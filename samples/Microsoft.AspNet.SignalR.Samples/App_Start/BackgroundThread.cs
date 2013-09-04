@@ -22,7 +22,7 @@ namespace Microsoft.AspNet.SignalR.Samples
 
                 hubContext.Connection.Receive(async message =>
                 {
-                    Debug.WriteLine("Received hub invocation: {0}", (object)message);
+                    Debug.WriteLine("Received hub invocation: {0}", message);
                 });
 
                 hubContext.Subscribe(async invocation =>
