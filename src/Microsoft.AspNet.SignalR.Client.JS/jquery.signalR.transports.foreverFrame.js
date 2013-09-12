@@ -26,10 +26,13 @@
                         if (attachedTo === 0) {
                             // Create and destroy iframe every 3 seconds to prevent loading icon, super hacky
                             loadingFixIntervalId = window.setInterval(function () {
-                                var tempFrame = $("<iframe style='position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;' src=''></iframe>");
+                                var tempFrame = window.document.createElement("iframe");
 
-                                $("body").append(tempFrame);
-                                tempFrame.remove();
+                                tempFrame.setAttribute("style", "position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;");
+
+                                window.document.body.appendChild(tempFrame);
+                                window.document.body.removeChild(tempFrame);
+
                                 tempFrame = null;
                             }, loadingFixInterval);
                         }
@@ -61,7 +64,11 @@
             var that = this,
                 frameId = (transportLogic.foreverFrame.count += 1),
                 url,
-                frame = $("<iframe data-signalr-connection-id='" + connection.id + "' style='position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;' src=''></iframe>");
+                frame = window.document.createElement("iframe"),
+                frameLoadHandler = function () {
+                    connection.log("Forever frame iframe finished loading and is no longer receiving messages, reconnecting.");
+                    that.reconnect(connection);
+                };
 
             if (window.EventSource) {
                 // If the browser supports SSE, don't use Forever Frame
@@ -72,6 +79,9 @@
                 return;
             }
 
+            frame.setAttribute("data-signalr-connection-id", connection.id);
+            frame.setAttribute("style", "position:absolute;top:0;left:0;width:0;height:0;visibility:hidden;");
+
             // Start preventing loading icon
             // This will only perform work if the loadPreventer is not attached to another connection.
             loadPreventer.prevent();
@@ -81,21 +91,22 @@
             url += "&frameId=" + frameId;
 
             // Set body prior to setting URL to avoid caching issues.
-            $("body").append(frame);
+            window.document.body.appendChild(frame);
 
-            frame.prop("src", url);
+            connection.log("Binding to iframe's load event.");
+
+            if (frame.contentDocument) {
+                if (frame.addEventListener) {
+                    frame.addEventListener("load", frameLoadHandler, false);
+                } else if (frame.attachEvent) {
+                    frame.attachEvent("onload", frameLoadHandler);
+                }
+            }
+
+            frame.src = url;
             transportLogic.foreverFrame.connections[frameId] = connection;
 
-            connection.log("Binding to iframe's readystatechange event.");
-            frame.bind("readystatechange", function () {
-                if ($.inArray(this.readyState, ["loaded", "complete"]) >= 0) {
-                    connection.log("Forever frame iframe readyState changed to " + this.readyState + ", reconnecting");
-
-                    that.reconnect(connection);
-                }
-            });
-
-            connection.frame = frame[0];
+            connection.frame = frame;
             connection.frameId = frameId;
 
             if (onSuccess) {
