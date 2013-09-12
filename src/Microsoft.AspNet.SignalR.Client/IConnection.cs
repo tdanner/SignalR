@@ -21,6 +21,7 @@ namespace Microsoft.AspNet.SignalR.Client
     {
         Version Protocol { get; set; }
         TimeSpan TransportConnectTimeout { get; set; }
+        TimeSpan ReconnectWindow { get; set; }
         KeepAliveData KeepAliveData { get; set; }
         string MessageId { get; set; }
         string GroupsToken { get; set; }
@@ -31,6 +32,7 @@ namespace Microsoft.AspNet.SignalR.Client
         string QueryString { get; }
         ConnectionState State { get; }
         IClientTransport Transport { get; }
+        DateTime LastMessageAt { get; }
 
 #if !PORTABLE
         /// <summary>
@@ -61,7 +63,7 @@ namespace Microsoft.AspNet.SignalR.Client
         void OnReconnected();
         void OnConnectionSlow();
         void PrepareRequest(IRequest request);
-        void UpdateLastKeepAlive();
+        void MarkLastMessage();
         void Trace(TraceLevels level, string format, params object[] args);
     }
 }

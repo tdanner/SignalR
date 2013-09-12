@@ -155,7 +155,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                 throw new ArgumentNullException("connection");
             }
 
-            connection.UpdateLastKeepAlive();
+            connection.MarkLastMessage();
 
             shouldReconnect = false;
             disconnected = false;
@@ -207,6 +207,23 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             {
                 connection.OnError(ex);
             }
+        }
+
+        public static bool VerifyReconnect(IConnection connection)
+        {
+            if (connection == null)
+            {
+                throw new ArgumentNullException("connection");
+            }
+
+            if(DateTime.UtcNow - connection.LastMessageAt >= connection.ReconnectWindow)
+            {
+                connection.Trace(TraceLevels.Events, "There has not been an active server connection for an extended period of time.  Stopping connection.");
+                connection.Stop();
+                return false;
+            }
+
+            return true;
         }
 
         private static void UpdateGroups(IConnection connection, JToken groupsToken)
