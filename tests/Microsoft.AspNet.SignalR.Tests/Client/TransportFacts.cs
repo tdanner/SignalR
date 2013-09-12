@@ -9,6 +9,8 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Extensions;
+using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR.Transports;
 
 namespace Microsoft.AspNet.SignalR.Tests
 {
@@ -68,6 +70,34 @@ namespace Microsoft.AspNet.SignalR.Tests
             TransportHelper.ProcessResponse(connection.Object, "{\"I\":{}}", out timedOut, out disconnected);
 
             connection.VerifyAll();
+        }
+
+        [Fact]
+        public void WebSocketRemovedFromTransportList()
+        {
+            var tcs = new TaskCompletionSource<NegotiationResponse>();
+            var mre = new ManualResetEventSlim();
+
+            var transports = new List<IClientTransport>();
+
+            var webSocketTransport = new Mock<WebSocketTransport>();
+            webSocketTransport.Setup(w => w.Start(It.IsAny<IConnection>(), It.IsAny<string>(), CancellationToken.None))
+                .Callback(mre.Set);
+
+            transports.Add(webSocketTransport.Object);
+            transports.Add(new ServerSentEventsTransport());
+            transports.Add(new LongPollingTransport());
+
+            var negotiationResponse = new NegotiationResponse();
+            negotiationResponse.TryWebSockets = false;
+
+            tcs.SetResult(negotiationResponse);
+
+            var autoTransport = new Mock<AutoTransport>(It.IsAny<IHttpClient>(), transports);
+            autoTransport.Setup(c => c.GetNegotiateResponse(It.IsAny<Connection>(), It.IsAny<string>())).Returns(tcs.Task);
+            autoTransport.Object.Negotiate(new Connection("http://foo", string.Empty), string.Empty).Wait();
+
+            Assert.False(mre.IsSet);
         }
 
         [Fact]

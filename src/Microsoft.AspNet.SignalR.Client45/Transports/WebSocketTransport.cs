@@ -63,7 +63,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             return _client.GetNegotiationResponse(connection);
         }
 
-        public Task Start(IConnection connection, string data, CancellationToken disconnectToken)
+        public virtual Task Start(IConnection connection, string data, CancellationToken disconnectToken)
         {
             _startTcs = new TaskCompletionSource<object>();
             _disconnectToken = disconnectToken;
