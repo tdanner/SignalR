@@ -37,8 +37,6 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
             catch (ConfigurationErrorsException ex)
             {
                 _trace.TraceError("Invalid connection string '{0}': {1}", configuration.ConnectionString, ex.Message);
-
-                throw;
             }
 
             _idleSubscriptionTimeout = configuration.IdleSubscriptionTimeout;
@@ -173,12 +171,14 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
                 catch (UnauthorizedAccessException ex)
                 {
                     _trace.TraceError(errorMessage, ex.Message);
-                    throw;
                 }
                 catch (QuotaExceededException ex)
                 {
                     _trace.TraceError(errorMessage, ex.Message);
-                    throw;
+                    if(ex.IsTransient)
+                    {
+                        Thread.Sleep(RetryDelay);
+                    }
                 }
                 catch (MessagingException ex)
                 {
@@ -186,10 +186,6 @@ namespace Microsoft.AspNet.SignalR.ServiceBus
                     if (ex.IsTransient)
                     {
                         Thread.Sleep(RetryDelay);
-                    }
-                    else
-                    {
-                        throw;
                     }
                 }
                 catch (Exception ex)
