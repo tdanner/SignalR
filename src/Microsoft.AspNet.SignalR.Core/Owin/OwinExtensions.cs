@@ -14,7 +14,7 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Owin.Middleware;
 using Microsoft.AspNet.SignalR.Tracing;
 using Microsoft.Owin.Infrastructure;
-using Microsoft.Owin.Security.DataProtection;
+//using Microsoft.Owin.Security.DataProtection;
 using Microsoft.Owin.Extensions;
 
 namespace Owin
@@ -191,24 +191,24 @@ namespace Owin
 
                 // Use the data protection provider from app builder and fallback to the
                 // Dpapi provider
-                IDataProtectionProvider provider = builder.GetDataProtectionProvider();
+                //IDataProtectionProvider provider = builder.GetDataProtectionProvider();
                 IProtectedData protectedData;
 
                 // If we're using DPAPI then fallback to the default protected data if running
                 // on mono since it doesn't support any of this
-                if (provider == null && MonoUtility.IsRunningMono)
+                //if (provider == null && MonoUtility.IsRunningMono)
                 {
                     protectedData = new DefaultProtectedData();
                 }
-                else
-                {
-                    if (provider == null)
-                    {
-                        provider = new DpapiDataProtectionProvider(instanceName);
-                    }
+                //else
+                //{
+                //    if (provider == null)
+                //    {
+                //        provider = new DpapiDataProtectionProvider(instanceName);
+                //    }
 
-                    protectedData = new DataProtectionProviderProtectedData(provider);
-                }
+                //    protectedData = new DataProtectionProviderProtectedData(provider);
+                //}
 
                 resolver.Register(typeof(IProtectedData), () => protectedData);
 

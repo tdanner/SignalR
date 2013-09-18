@@ -168,7 +168,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
             }
 
             // Return a task that represents all
-            return Task.WhenAll(tasks);
+            return TaskEx.WhenAll(tasks);
         }
 
         private static string GetFilter(IList<string> excludedSignals)
