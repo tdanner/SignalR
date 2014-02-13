@@ -34,7 +34,7 @@ namespace Microsoft.AspNet.SignalR.Messaging
         internal static Task Ack(this IMessageBus bus, string connectionId, string commandId)
         {
             // Prepare the ack
-            var message = new Message(connectionId, PrefixHelper.GetAck(connectionId), null);
+            var message = new Message(connectionId, PrefixHelper.GetAck(connectionId), (String)null);
             message.CommandId = commandId;
             message.IsAck = true;
             return bus.Publish(message);

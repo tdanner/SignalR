@@ -22,9 +22,13 @@ namespace Microsoft.AspNet.SignalR.Configuration
 
         public DefaultConfigurationManager()
         {
-            ConnectionTimeout = TimeSpan.FromSeconds(110);
+            // Make the connection timeout equivalent to the disconnect timeout so on the client we know when the
+            // server "may" have forgotten about us for the Long Polling transport.
+            ConnectionTimeout = TimeSpan.FromSeconds(30);
             DisconnectTimeout = TimeSpan.FromSeconds(30);
             DefaultMessageBufferSize = 1000;
+            TransportConnectTimeout = TimeSpan.FromSeconds(5);
+            LongPollDelay = TimeSpan.Zero;
         }
 
         // TODO: Should we guard against negative TimeSpans here like everywhere else?
@@ -81,6 +85,18 @@ namespace Microsoft.AspNet.SignalR.Configuration
         }
 
         public int DefaultMessageBufferSize
+        {
+            get;
+            set;
+        }
+
+        public TimeSpan TransportConnectTimeout
+        {
+            get;
+            set;
+        }
+
+        public TimeSpan LongPollDelay
         {
             get;
             set;

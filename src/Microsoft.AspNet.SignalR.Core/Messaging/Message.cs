@@ -53,6 +53,23 @@ namespace Microsoft.AspNet.SignalR.Messaging
             Value = value;
         }
 
+        public Message(string source, string key, byte[] rawBytes)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            if (key == null)
+            {
+                throw new ArgumentNullException("key");
+            }
+
+            Source = source;
+            Key = key;
+            RawBinary = rawBytes;
+        }
+
         /// <summary>
         /// Which connection the message originated from
         /// </summary>
@@ -66,7 +83,10 @@ namespace Microsoft.AspNet.SignalR.Messaging
         /// <summary>
         /// The message payload
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly", Justification = "This type is serialzied")]
         public ArraySegment<byte> Value { get; set; }
+
+        public byte[] RawBinary { get; private set; }
 
         /// <summary>
         /// The command id if this message is a command
@@ -110,6 +130,15 @@ namespace Microsoft.AspNet.SignalR.Messaging
                 return !String.IsNullOrEmpty(CommandId);
             }
         }
+
+        public bool IsRawBinary
+        {
+            get
+            {
+                return RawBinary != null;
+            }
+        }
+
 
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "This may be expensive")]
         public string GetString()
