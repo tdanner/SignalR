@@ -1,12 +1,11 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client.Transports;
-using Microsoft.AspNet.SignalR.Tests.Common.Infrastructure.IIS;
+using Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure.IIS;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
+namespace Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure
 {
     public class IISExpressTestHost : ITestHost
     {
@@ -58,8 +57,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
         public TextWriter ClientTraceOutput { get; set; }
 
         public IDictionary<string, string> ExtraData { get; private set; }
-
-        public IDependencyResolver Resolver { get; set; }
         
         public IList<IDisposable> Disposables
         {
@@ -70,21 +67,13 @@ namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
         public void Initialize(int? keepAlive,
                                int? connectionTimeout,
                                int? disconnectTimeout,
-                               int? transportConnectTimeout,
-                               bool enableAutoRejoiningGroups,
-                               MessageBusType type = MessageBusType.Default)
+                               bool enableAutoRejoiningGroups)
         {
-            if (type != MessageBusType.Default)
-            {
-                throw new NotImplementedException();
-            }
-
             // Use a configuration file to specify values
             string content = String.Format(_webConfigTemplate.Value,
                                            keepAlive,
                                            connectionTimeout,
                                            disconnectTimeout,
-                                           transportConnectTimeout,
                                            enableAutoRejoiningGroups,
                                            _logFileName);
 
@@ -103,16 +92,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
             {
                 d.Dispose();
             }
-        }
-
-        public Task Get(string uri, bool disableWrites)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Post(string uri, IDictionary<string, string> data)
-        {
-            throw new NotImplementedException();
         }
 
         public void Shutdown()

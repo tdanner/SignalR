@@ -5,13 +5,12 @@ using Newtonsoft.Json.Linq;
 using Microsoft.AspNet.SignalR.Client.Infrastructure;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using System.Collections.Generic;
-#if !PORTABLE
+
 namespace Microsoft.AspNet.SignalR.Client.Hubs
 {
     /// <summary>
     /// <see cref="T:System.IObservable{object[]}"/> implementation of a hub event.
     /// </summary>
-
     public class Hubservable : IObservable<IList<JToken>>
     {
         private readonly string _eventName;
@@ -35,4 +34,3 @@ namespace Microsoft.AspNet.SignalR.Client.Hubs
         }
     }
 }
-#endif

@@ -24,7 +24,6 @@ namespace Microsoft.AspNet.SignalR
                 throw new ArgumentNullException("topicPrefix");
             }
 
-            IdleSubscriptionTimeout = TimeSpan.FromHours(1);
             ConnectionString = connectionString;
             TopicPrefix = topicPrefix;
             TopicCount = 1;
@@ -72,10 +71,5 @@ namespace Microsoft.AspNet.SignalR
         /// expired messages.
         /// </summary>
         public TimeSpan TimeToLive { get; set; }
-
-        /// <summary>
-        /// Specifies the time duration after which an idle subscription is deleted
-        /// </summary>
-        public TimeSpan IdleSubscriptionTimeout { get; set; }
     }
 }

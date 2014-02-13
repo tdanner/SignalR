@@ -1,10 +1,9 @@
-﻿namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
+﻿namespace Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure
 {
     public enum HostType
     {
         IISExpress,
         Memory,
-        HttpListener,
-        External,
+        Owin
     }
 }

@@ -31,12 +31,6 @@ namespace Microsoft.AspNet.SignalR.Hubs
         public string Id { get; set; }
 
         /// <summary>
-        /// Indicates whether the Error is a see <see cref="HubException"/>.
-        /// </summary>
-        [JsonProperty("H", NullValueHandling = NullValueHandling.Ignore)]
-        public bool? IsHubException { get; set; }
-
-        /// <summary>
         /// The exception that occurs as a result of invoking the hub method.
         /// </summary>
         [JsonProperty("E", NullValueHandling = NullValueHandling.Ignore)]
@@ -47,11 +41,5 @@ namespace Microsoft.AspNet.SignalR.Hubs
         /// </summary>
         [JsonProperty("T", NullValueHandling = NullValueHandling.Ignore)]
         public string StackTrace { get; set; }
-
-        /// <summary>
-        /// Extra error data contained in the <see cref="HubException"/>
-        /// </summary>
-        [JsonProperty("D", NullValueHandling = NullValueHandling.Ignore)]
-        public object ErrorData { get; set; }
     }
 }

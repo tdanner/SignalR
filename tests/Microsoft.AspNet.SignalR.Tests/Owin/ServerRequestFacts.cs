@@ -15,7 +15,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -32,7 +31,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -49,7 +47,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             env[OwinConstants.LocalPort] = "12345";
             env[OwinConstants.LocalIpAddress] = "192.168.1.1";
             var headers = new Dictionary<string, string[]>();
@@ -67,7 +64,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             env[OwinConstants.RequestHeaders] = headers;
             env[OwinConstants.LocalIpAddress] = "someip";
@@ -78,18 +74,17 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
         }
 
         [Fact]
-        public void NoHostOrIpAddressUsesLocalhost()
+        public void NoHostOrIpAddressUsesLoopback()
         {
             var env = new Dictionary<string, object>();
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             env[OwinConstants.RequestHeaders] = headers;
             var request = new ServerRequest(env);
 
-            Assert.Equal("localhost", request.Url.Host);
+            Assert.Equal(IPAddress.Loopback.ToString(), request.Url.Host);
             Assert.Equal(443, request.Url.Port);
         }
 
@@ -100,7 +95,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -117,7 +111,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com:356" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -134,7 +127,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -151,7 +143,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:1234" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -168,7 +159,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "192.168.1.1" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -185,7 +175,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "192.168.1.1:89" };
             env[OwinConstants.RequestHeaders] = headers;
@@ -202,7 +191,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "http";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             env[OwinConstants.LocalPort] = "34";
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com" };
@@ -220,7 +208,6 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
             env[OwinConstants.RequestScheme] = "https";
             env[OwinConstants.RequestPathBase] = String.Empty;
             env[OwinConstants.RequestPath] = String.Empty;
-            env[OwinConstants.RequestQueryString] = String.Empty;
             env[OwinConstants.LocalPort] = "34";
             var headers = new Dictionary<string, string[]>();
             headers["Host"] = new[] { "www.foo.com" };
@@ -229,6 +216,15 @@ namespace Microsoft.AspNet.SignalR.Tests.Owin
 
             Assert.Equal("www.foo.com", request.Url.Host);
             Assert.Equal(443, request.Url.Port);
+        }
+
+        [Fact]
+        public void NotAWebSocketRequestThrowsSynchronously()
+        {
+            var env = new Dictionary<string, object>();
+            var request = new ServerRequest(env);
+
+            Assert.Throws<InvalidOperationException>(() => request.AcceptWebSocketRequest(socket => TaskAsyncHelper.Empty));
         }
 
         internal static class OwinConstants

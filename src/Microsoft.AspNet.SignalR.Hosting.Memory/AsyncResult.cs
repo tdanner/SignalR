@@ -38,6 +38,10 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
         public void SetAsCompleted(
             Exception exception, Boolean completedSynchronously)
         {
+            // Passing null for exception means no error occurred. 
+            // This is the common case
+            m_exception = exception;
+
             // The m_CompletedState field MUST be set prior calling the callback
             Int32 prevState = Interlocked.Exchange(ref m_CompletedState,
                 completedSynchronously
@@ -49,11 +53,6 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
                 // Noop
                 return;
             }
-
-            // Passing null for exception means no error occurred. 
-            // This is the common case
-            m_exception = exception;
-
 
             // If the event exists, set it
             if (m_AsyncWaitHandle != null) m_AsyncWaitHandle.Set();

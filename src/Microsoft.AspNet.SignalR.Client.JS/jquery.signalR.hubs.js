@@ -3,11 +3,11 @@
 /*global window:false */
 /// <reference path="jquery.signalR.core.js" />
 
-(function ($, window, undefined) {
+(function ($, window) {
     "use strict";
 
-    var eventNamespace = ".hubProxy",
-        signalR = $.signalR;
+    // we use a global id for tracking callbacks so the server doesn't have to send extra info like hub name
+    var eventNamespace = ".hubProxy";
 
     function makeEventName(event) {
         return event + eventNamespace;
@@ -46,9 +46,7 @@
         var callbacks = connection._.invocationCallbacks,
             callback;
         
-        if (hasMembers(callbacks)) {
-            connection.log("Clearing hub invocation callbacks with error: " + error + ".");
-        }
+        connection.log("Clearing hub invocation callbacks with error: " + error);
         
         // Reset the callback cache now as we have a local var referencing it
         connection._.invocationCallbackId = 0;
@@ -92,8 +90,8 @@
             /// <summary>Wires up a callback to be invoked when a invocation request is received from the server hub.</summary>
             /// <param name="eventName" type="String">The name of the hub event to register the callback for.</param>
             /// <param name="callback" type="Function">The callback to be invoked.</param>
-            var that = this,
-                callbackMap = that._.callbackMap;
+            var self = this,
+                callbackMap = self._.callbackMap;
 
             // Normalize the event name to lowercase
             eventName = eventName.toLowerCase();
@@ -105,20 +103,20 @@
 
             // Map the callback to our encompassed function
             callbackMap[eventName][callback] = function (e, data) {
-                callback.apply(that, data);
+                callback.apply(self, data);
             };
 
-            $(that).bind(makeEventName(eventName), callbackMap[eventName][callback]);
+            $(self).bind(makeEventName(eventName), callbackMap[eventName][callback]);
 
-            return that;
+            return self;
         },
 
         off: function (eventName, callback) {
             /// <summary>Removes the callback invocation request from the server hub for the given event name.</summary>
             /// <param name="eventName" type="String">The name of the hub event to unregister the callback for.</param>
             /// <param name="callback" type="Function">The callback to be invoked.</param>
-            var that = this,
-                callbackMap = that._.callbackMap,
+            var self = this,
+                callbackMap = self._.callbackMap,
                 callbackSpace;
 
             // Normalize the event name to lowercase
@@ -130,7 +128,7 @@
             if (callbackSpace) {
                 // Only unbind if there's an event bound with eventName and a callback with the specified callback
                 if (callbackSpace[callback]) {
-                    $(that).unbind(makeEventName(eventName), callbackSpace[callback]);
+                    $(self).unbind(makeEventName(eventName), callbackSpace[callback]);
 
                     // Remove the callback from the callback map
                     delete callbackSpace[callback];
@@ -139,60 +137,53 @@
                     if (!hasMembers(callbackSpace)) {
                         delete callbackMap[eventName];
                     }
-                } else if (!callback) { // Check if we're removing the whole event and we didn't error because of an invalid callback
-                    $(that).unbind(makeEventName(eventName));
+                }
+                else if (!callback) { // Check if we're removing the whole event and we didn't error because of an invalid callback
+                    $(self).unbind(makeEventName(eventName));
 
                     delete callbackMap[eventName];
                 }
             }
 
-            return that;
+            return self;
         },
 
         invoke: function (methodName) {
             /// <summary>Invokes a server hub method with the given arguments.</summary>
             /// <param name="methodName" type="String">The name of the server hub method.</param>
 
-            var that = this,
-                connection = that.connection,
+            var self = this,
+                connection = self.connection,
                 args = $.makeArray(arguments).slice(1),
                 argValues = map(args, getArgValue),
-                data = { H: that.hubName, M: methodName, A: argValues, I: connection._.invocationCallbackId },
+                data = { H: self.hubName, M: methodName, A: argValues, I: connection._.invocationCallbackId },
                 d = $.Deferred(),
                 callback = function (minResult) {
-                    var result = that._maximizeHubResponse(minResult),
-                        source,
-                        error;
+                    var result = self._maximizeHubResponse(minResult);
 
                     // Update the hub state
-                    $.extend(that.state, result.State);
+                    $.extend(self.state, result.State);
 
                     if (result.Error) {
                         // Server hub method threw an exception, log it & reject the deferred
                         if (result.StackTrace) {
-                            connection.log(result.Error + "\n" + result.StackTrace + ".");
+                            connection.log(result.Error + "\n" + result.StackTrace);
                         }
-
-                        // result.ErrorData is only set if a HubException was thrown
-                        source = result.IsHubException ? "HubException" : "Exception";
-                        error = signalR._.error(result.Error, source);
-                        error.data = result.ErrorData;
-
-                        d.rejectWith(that, [error]);
+                        d.rejectWith(self, [result.Error]);
                     } else {
                         // Server invocation succeeded, resolve the deferred
-                        d.resolveWith(that, [result.Result]);
+                        d.resolveWith(self, [result.Result]);
                     }
                 };
 
-            connection._.invocationCallbacks[connection._.invocationCallbackId.toString()] = { scope: that, method: callback };
+            connection._.invocationCallbacks[connection._.invocationCallbackId.toString()] = { scope: self, method: callback };
             connection._.invocationCallbackId += 1;
 
-            if (!$.isEmptyObject(that.state)) {
-                data.S = that.state;
+            if (!$.isEmptyObject(self.state)) {
+                data.S = self.state;
             }
             
-            connection.send(data);
+            connection.send(window.JSON.stringify(data));
 
             return d.promise();
         },
@@ -202,10 +193,8 @@
                 State: minHubResponse.S,
                 Result: minHubResponse.R,
                 Id: minHubResponse.I,
-                IsHubException: minHubResponse.H,
                 Error: minHubResponse.E,
-                StackTrace: minHubResponse.T,
-                ErrorData: minHubResponse.D
+                StackTrace: minHubResponse.T
             };
         }
     };
@@ -351,27 +340,21 @@
         ///     Sets the starting event to loop through the known hubs and register any new hubs 
         ///     that have been added to the proxy.
         /// </summary>
-        var connection = this;
 
-        if (!connection._subscribedToHubs) {
-            connection._subscribedToHubs = true;
-            connection.starting(function () {
+        if (!this._subscribedToHubs) {
+            this._subscribedToHubs = true;
+            this.starting(function () {
                 // Set the connection's data object with all the hub proxies with active subscriptions.
                 // These proxies will receive notifications from the server.
                 var subscribedHubs = [];
 
-                $.each(connection.proxies, function (key) {
+                $.each(this.proxies, function (key) {
                     if (this.hasSubscriptions()) {
                         subscribedHubs.push({ name: key });
-                        connection.log("Client subscribed to hub '" + key + "'.");
                     }
                 });
 
-                if (subscribedHubs.length === 0) {
-                    connection.log("No hubs have been subscribed to.  The client will not receive data from hubs.  To fix, declare at least one client side function prior to connection start for each hub you wish to subscribe to.");
-                }
-
-                connection.data = connection.json.stringify(subscribedHubs);
+                this.data = window.JSON.stringify(subscribedHubs);
             });
         }
     };

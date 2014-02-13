@@ -1,8 +1,8 @@
 ﻿using System;
-using Microsoft.AspNet.SignalR.Client;
+using Microsoft.AspNet.SignalR.Client.Hubs;
 using Xunit;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common
+namespace Microsoft.AspNet.SignalR.FunctionalTests
 {
     public static class ClientAssertExtensions
     {

@@ -1,10 +1,9 @@
-﻿namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
+﻿namespace Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure
 {
     public enum MessageBusType
     {
         Default,
         Fake,
-        FakeMultiStream,
         SqlServer,
         ServiceBus,
         Redis

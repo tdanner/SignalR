@@ -11,7 +11,6 @@ using Microsoft.AspNet.SignalR.Client.Http;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Owin;
 using Microsoft.AspNet.SignalR.Owin.Infrastructure;
-using Microsoft.Owin;
 using Owin;
 using Owin.Builder;
 using IClientRequest = Microsoft.AspNet.SignalR.Client.Http.IRequest;
@@ -26,14 +25,9 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
         private readonly CancellationTokenSource _shutDownTokenSource = new CancellationTokenSource();
         private readonly CancellationToken _shutDownToken;
         private int _disposed;
-        private IAppBuilder _appBuilder;
         private AppFunc _appFunc;
         private string _instanceName;
         private readonly Lazy<string> _defaultInstanceName;
-
-        public void Initialize(SignalR.Client.IConnection connection)
-        {
-        }
 
         public MemoryHost()
         {
@@ -48,15 +42,15 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
                 throw new ArgumentNullException("startup");
             }
 
-            _appBuilder = new AppBuilder();
+            var builder = new AppBuilder();
 
-            _appBuilder.Properties[OwinConstants.ServerCapabilities] = new Dictionary<string, object>();
-            _appBuilder.Properties[OwinConstants.HostOnAppDisposing] = _shutDownToken;
-            _appBuilder.Properties[OwinConstants.HostAppNameKey] = InstanceName;
+            builder.Properties[OwinConstants.ServerCapabilities] = new Dictionary<string, object>();
+            builder.Properties[OwinConstants.HostOnAppDisposing] = _shutDownToken;
+            builder.Properties[OwinConstants.HostAppNameKey] = InstanceName;
 
-            startup(_appBuilder);
+            startup(builder);
 
-            _appFunc = Build(_appBuilder);
+            _appFunc = Build(builder);
         }
 
         public string InstanceName
@@ -81,17 +75,17 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             return ProcessRequest("GET", url, req => { }, null, disableWrites);
         }
 
-        public Task<IClientResponse> Post(string url, IDictionary<string, string> postData, bool isLongRunning)
+        public Task<IClientResponse> Post(string url, IDictionary<string, string> postData)
         {
-            return ((IHttpClient)this).Post(url, req => { }, postData, isLongRunning);
+            return ((IHttpClient)this).Post(url, req => { }, postData);
         }
 
-        Task<IClientResponse> IHttpClient.Get(string url, Action<IClientRequest> prepareRequest, bool isLongRunning)
+        Task<IClientResponse> IHttpClient.Get(string url, Action<IClientRequest> prepareRequest)
         {
             return ProcessRequest("GET", url, prepareRequest, postData: null);
         }
 
-        Task<IClientResponse> IHttpClient.Post(string url, Action<IClientRequest> prepareRequest, IDictionary<string, string> postData, bool isLongRunning)
+        Task<IClientResponse> IHttpClient.Post(string url, Action<IClientRequest> prepareRequest, IDictionary<string, string> postData)
         {
             return ProcessRequest("POST", url, prepareRequest, postData);
         }
@@ -120,11 +114,12 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             }
 
             var tcs = new TaskCompletionSource<IClientResponse>();
-
-            // REVIEW: Should we add a new method to the IClientResponse to trip this?
             var clientTokenSource = new SafeCancellationTokenSource();
 
-            var env = new OwinEnvironment(_appBuilder.Properties);
+            var env = new Dictionary<string, object>();
+
+            // Server specific setup
+            env[OwinConstants.Version] = "1.0";
 
             // Request specific setup
             var uri = new Uri(url);
@@ -148,8 +143,11 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
                 headers.SetHeader("Content-Type", "application/x-www-form-urlencoded");
             }
 
+            // Run the client function to initialize the request
+            prepareRequest(new Request(env, clientTokenSource.Cancel));
+
             var networkObservable = new NetworkObservable(disableWrites);
-            var clientStream = new ClientStream(networkObservable, clientTokenSource);
+            var clientStream = new ClientStream(networkObservable);
             var serverStream = new ServerStream(networkObservable);
 
             var response = new Response(clientStream);
@@ -157,18 +155,19 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             // Trigger the tcs on flush. This mimicks the client side
             networkObservable.OnFlush = () => tcs.TrySetResult(response);
 
-            // Run the client function to initialize the request
-            prepareRequest(new Request(env, networkObservable.Cancel));
+            // Cancel the network observable on cancellation of the token
+            clientTokenSource.Token.Register(networkObservable.Cancel);
 
             env[OwinConstants.ResponseBody] = serverStream;
             env[OwinConstants.ResponseHeaders] = new Dictionary<string, string[]>();
 
             _appFunc(env).ContinueWith(task =>
             {
-                var owinResponse = new OwinResponse(env);
-                if (!IsSuccessStatusCode(owinResponse.StatusCode))
+                object statusCode;
+                if (env.TryGetValue(OwinConstants.ResponseStatusCode, out statusCode) &&
+                    (int)statusCode == 403)
                 {
-                    tcs.TrySetException(new InvalidOperationException("Unsuccessful status code " + owinResponse.StatusCode));
+                    tcs.TrySetException(new InvalidOperationException("Forbidden"));
                 }
                 else if (task.IsFaulted)
                 {
@@ -227,6 +226,7 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
                     writer.Write(item.Key);
                     writer.Write("=");
                     writer.Write(UrlEncoder.UrlEncode(item.Value));
+                    writer.WriteLine();
                     first = false;
                 }
 
@@ -243,17 +243,6 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             }
 
             return (AppFunc)builder.Build(typeof(AppFunc));
-        }
-
-        private static bool IsSuccessStatusCode(int statusCode)
-        {
-            // If it's unset just return true
-            if (statusCode == 0)
-            {
-                return true;
-            }
-
-            return (statusCode >= 200) && (statusCode <= 299);
         }
     }
 }

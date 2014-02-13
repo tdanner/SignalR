@@ -14,6 +14,5 @@ namespace Microsoft.AspNet.SignalR.Client
         public double DisconnectTimeout { get; set; }
         public bool TryWebSockets { get; set; }
         public double? KeepAliveTimeout { get; set; }
-        public double TransportConnectTimeout { get; set; }
     }
 }

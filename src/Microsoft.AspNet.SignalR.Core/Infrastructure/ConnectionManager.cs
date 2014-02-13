@@ -10,7 +10,6 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Tracing;
-using Newtonsoft.Json;
 
 namespace Microsoft.AspNet.SignalR.Infrastructure
 {
@@ -88,7 +87,9 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
                 _counters.ErrorsAllTotal,
                 _counters.ErrorsAllPerSec);
 
-            return new HubContext(connection, pipelineInvoker, hubName);
+            Func<string, ClientHubInvocation, IList<string>, Task> send = (signal, value, exclude) => pipelineInvoker.Send(new HubOutgoingInvokerContext(connection, signal, value, exclude));
+
+            return new HubContext(send, hubName, connection);
         }
 
         internal Connection GetConnectionCore(string connectionName)
@@ -98,7 +99,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
             // Give this a unique id
             var connectionId = Guid.NewGuid().ToString();
             return new Connection(_resolver.Resolve<IMessageBus>(),
-                                  _resolver.Resolve<JsonSerializer>(),
+                                  _resolver.Resolve<IJsonSerializer>(),
                                   connectionName,
                                   connectionId,
                                   signals,

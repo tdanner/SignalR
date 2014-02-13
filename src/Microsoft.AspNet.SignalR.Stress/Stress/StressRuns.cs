@@ -3,17 +3,19 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNet.SignalR.Client;
+using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Client.Http;
+using Microsoft.AspNet.SignalR.Client.Hubs;
 using Microsoft.AspNet.SignalR.Configuration;
 using Microsoft.AspNet.SignalR.Hosting.Memory;
+using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
-using Microsoft.AspNet.SignalR.Samples;
+using Microsoft.AspNet.SignalR.Samples.Raw;
 using Microsoft.AspNet.SignalR.Tests.Infrastructure;
 using Newtonsoft.Json.Linq;
 using Owin;
@@ -22,13 +24,6 @@ namespace Microsoft.AspNet.SignalR.Stress
 {
     public static class StressRuns
     {
-        static StressRuns()
-        {
-            // HACK: This is horrible but we need the assembly to be loaded
-            // so that hubs are detected
-            Assembly.Load("Microsoft.AspNet.SignalR.StressServer");
-        }
-
         public static IDisposable StressGroups(int max = 100)
         {
             var host = new MemoryHost();
@@ -39,7 +34,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                     Resolver = new DefaultDependencyResolver()
                 };
 
-                app.MapSignalR(config);
+                app.MapHubs(config);
 
                 var configuration = config.Resolver.Resolve<IConfigurationManager>();
                 // The below effectively sets the heartbeat interval to five seconds.
@@ -47,7 +42,7 @@ namespace Microsoft.AspNet.SignalR.Stress
             });
 
             var countDown = new CountDownRange<int>(Enumerable.Range(0, max));
-            var connection = new HubConnection("http://foo");
+            var connection = new Client.Hubs.HubConnection("http://foo");
             var proxy = connection.CreateHubProxy("HubWithGroups");
 
             proxy.On<int>("Do", i =>
@@ -102,14 +97,14 @@ namespace Microsoft.AspNet.SignalR.Stress
                     Resolver = new DefaultDependencyResolver()
                 };
 
-                app.MapSignalR(config);
+                app.MapHubs(config);
 
                 var configuration = config.Resolver.Resolve<IConfigurationManager>();
                 // The below effectively sets the heartbeat interval to five seconds.
                 configuration.KeepAlive = TimeSpan.FromSeconds(10);
 
                 var connectionManager = config.Resolver.Resolve<IConnectionManager>();
-                context = connectionManager.GetHubContext("SimpleEchoHub");
+                context = connectionManager.GetHubContext("EchoHub");
             });
 
             var cancellationTokenSource = new CancellationTokenSource();
@@ -124,8 +119,8 @@ namespace Microsoft.AspNet.SignalR.Stress
 
             thread.Start();
 
-            var connection = new HubConnection("http://foo");
-            var proxy = connection.CreateHubProxy("SimpleEchoHub");
+            var connection = new Client.Hubs.HubConnection("http://foo");
+            var proxy = connection.CreateHubProxy("EchoHub");
 
             try
             {
@@ -160,7 +155,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                 {
                     Resolver = new DefaultDependencyResolver()
                 };
-                app.MapSignalR(config);
+                app.MapHubs(config);
             });
 
             for (int i = 0; i < concurrency; i++)
@@ -189,7 +184,7 @@ namespace Microsoft.AspNet.SignalR.Stress
 
         private static void RunOne(MemoryHost host)
         {
-            var connection = new HubConnection("http://foo");
+            var connection = new Client.Hubs.HubConnection("http://foo");
             var proxy = connection.CreateHubProxy("OnConnectedOnDisconnectedHub");
 
             try
@@ -217,8 +212,8 @@ namespace Microsoft.AspNet.SignalR.Stress
 
             for (int i = 0; i < connections; i++)
             {
-                var connection = new HubConnection("http://foo");
-                var proxy = connection.CreateHubProxy("SimpleEchoHub");
+                var connection = new Client.Hubs.HubConnection("http://foo");
+                var proxy = connection.CreateHubProxy("EchoHub");
                 var wh = new ManualResetEventSlim(false);
 
                 proxy.On("echo", _ => wh.Set());
@@ -268,7 +263,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                         Resolver = new DefaultDependencyResolver()
                     };
 
-                    app.MapSignalR(config);
+                    app.MapHubs(config);
                 });
 
                 client = host;
@@ -280,7 +275,6 @@ namespace Microsoft.AspNet.SignalR.Stress
         {
             hosts = new MemoryHost[nodes];
             var eventBus = new EventBus();
-            var protectedData = new DefaultProtectedData();
             for (var i = 0; i < nodes; ++i)
             {
                 var host = new MemoryHost();
@@ -295,9 +289,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                     var bus = new DelayedMessageBus(host.InstanceName, eventBus, config.Resolver, TimeSpan.Zero);
                     config.Resolver.Register(typeof(IMessageBus), () => bus);
 
-                    app.MapSignalR(config);
-
-                    config.Resolver.Register(typeof(IProtectedData), () => protectedData);
+                    app.MapHubs(config);
                 });
 
                 hosts[i] = host;
@@ -311,7 +303,6 @@ namespace Microsoft.AspNet.SignalR.Stress
             var hosts = new MemoryHost[nodes];
             var random = new Random();
             var eventBus = new EventBus();
-            var protectedData = new DefaultProtectedData();
             for (var i = 0; i < nodes; ++i)
             {
                 var host = new MemoryHost();
@@ -327,9 +318,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                     var bus = new DelayedMessageBus(host.InstanceName, eventBus, config.Resolver, delay);
                     config.Resolver.Register(typeof(IMessageBus), () => bus);
 
-                    app.MapSignalR(config);
-
-                    config.Resolver.Register(typeof(IProtectedData), () => protectedData);
+                    app.MapHubs(config);
                 });
 
                 hosts[i] = host;
@@ -348,8 +337,8 @@ namespace Microsoft.AspNet.SignalR.Stress
 
         private static void RunLoop(IHttpClient client, ManualResetEventSlim wh)
         {
-            var connection = new HubConnection("http://foo");
-            var proxy = connection.CreateHubProxy("SimpleEchoHub");
+            var connection = new Client.Hubs.HubConnection("http://foo");
+            var proxy = connection.CreateHubProxy("EchoHub");
             connection.TraceLevel = Client.TraceLevels.Messages;
             var dict = new Dictionary<string, int>();
 
@@ -396,12 +385,12 @@ namespace Microsoft.AspNet.SignalR.Stress
                 };
 
                 config.Resolver.Resolve<IConfigurationManager>().ConnectionTimeout = TimeSpan.FromDays(1);
-                app.MapSignalR(config);
+                app.MapHubs(config);
             });
 
 
-            var connection = new HubConnection("http://foo");
-            var proxy = connection.CreateHubProxy("SimpleEchoHub");
+            var connection = new Client.Hubs.HubConnection("http://foo");
+            var proxy = connection.CreateHubProxy("EchoHub");
             var wh = new ManualResetEventSlim(false);
 
             proxy.On("echo", _ => wh.Set());
@@ -439,7 +428,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                     Resolver = new DefaultDependencyResolver()
                 };
 
-                app.MapSignalR<MyRejoinGroupConnection>("/groups", config);
+                app.MapConnection<MyRejoinGroupConnection>("/groups", config);
 
                 var configuration = config.Resolver.Resolve<IConfigurationManager>();
                 configuration.KeepAlive = null;
@@ -493,8 +482,7 @@ namespace Microsoft.AspNet.SignalR.Stress
                 {
                     Resolver = new DefaultDependencyResolver()
                 };
-
-                app.MapSignalR<RawConnection>("/Raw-connection", config);
+                app.MapConnection<RawConnection>("/Raw-connection", config);
             });
 
             for (int i = 0; i < concurrency; i++)
@@ -612,26 +600,18 @@ namespace Microsoft.AspNet.SignalR.Stress
                 _servers = servers;
             }
 
-            public void Initialize(SignalR.Client.IConnection connection)
-            {
-                foreach (SignalR.Client.Http.IHttpClient server in _servers)
-                {
-                    server.Initialize(connection);
-                }
-            }
-
-            public Task<Client.Http.IResponse> Get(string url, Action<Client.Http.IRequest> prepareRequest, bool isLongRunning)
+            public Task<Client.Http.IResponse> Get(string url, Action<Client.Http.IRequest> prepareRequest)
             {
                 int index = _random.Next(0, _servers.Length);
                 _counter = (_counter + 1) % _servers.Length;
-                return _servers[index].Get(url, prepareRequest, isLongRunning);
+                return _servers[index].Get(url, prepareRequest);
             }
 
-            public Task<Client.Http.IResponse> Post(string url, Action<Client.Http.IRequest> prepareRequest, IDictionary<string, string> postData, bool isLongRunning)
+            public Task<Client.Http.IResponse> Post(string url, Action<Client.Http.IRequest> prepareRequest, IDictionary<string, string> postData)
             {
                 int index = _random.Next(0, _servers.Length);
                 _counter = (_counter + 1) % _servers.Length;
-                return _servers[index].Post(url, prepareRequest, postData, isLongRunning);
+                return _servers[index].Post(url, prepareRequest, postData);
             }
         }
 

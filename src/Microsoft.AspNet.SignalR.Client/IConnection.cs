@@ -19,8 +19,6 @@ namespace Microsoft.AspNet.SignalR.Client
 {
     public interface IConnection
     {
-        Version Protocol { get; set; }
-        TimeSpan TransportConnectTimeout { get; set; }
         KeepAliveData KeepAliveData { get; set; }
         string MessageId { get; set; }
         string GroupsToken { get; set; }
@@ -31,17 +29,6 @@ namespace Microsoft.AspNet.SignalR.Client
         string QueryString { get; }
         ConnectionState State { get; }
         IClientTransport Transport { get; }
-
-#if !PORTABLE
-        /// <summary>
-        /// Gets of sets proxy information for the connection.
-        /// </summary>
-        IWebProxy Proxy { get; set; }
-#endif
-
-#if (NET4 || NET45)
-        X509CertificateCollection Certificates { get; }
-#endif
 
         bool ChangeState(ConnectionState oldState, ConnectionState newState);
 
@@ -62,6 +49,9 @@ namespace Microsoft.AspNet.SignalR.Client
         void OnConnectionSlow();
         void PrepareRequest(IRequest request);
         void UpdateLastKeepAlive();
+#if (NET4 || NET45)
+        void AddClientCertificate(X509Certificate certificate);
+#endif
         void Trace(TraceLevels level, string format, params object[] args);
     }
 }

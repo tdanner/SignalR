@@ -8,7 +8,7 @@ namespace Microsoft.AspNet.SignalR.Hosting
     /// <summary>
     /// Represents a web socket.
     /// </summary>
-    internal interface IWebSocket
+    public interface IWebSocket
     {
         /// <summary>
         /// Invoked when data is sent over the websocket
@@ -16,9 +16,9 @@ namespace Microsoft.AspNet.SignalR.Hosting
         Action<string> OnMessage { get; set; }
 
         /// <summary>
-        /// Invoked when the websocket closes
+        /// Invoked when the websocket gracefully closes
         /// </summary>
-        Action OnClose { get; set; }
+        Action<bool> OnClose { get; set; }
 
         /// <summary>
         /// Invoked when there is an error

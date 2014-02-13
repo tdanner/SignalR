@@ -9,7 +9,7 @@ using System.Net;
 using System.Threading;
 using Microsoft.Web.Administration;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure.IIS
+namespace Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure.IIS
 {
     public class SiteManager
     {

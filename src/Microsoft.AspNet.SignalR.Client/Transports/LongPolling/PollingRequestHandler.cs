@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client.Http;
@@ -80,7 +79,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exceptions are flowed back to user.")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exceptions are flowed back to user.")]
         private void Poll()
         {
             // This is to ensure that we do not accidently fire off another poll after being told to stop
@@ -103,22 +102,15 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                     // This is called just prior to posting the request to ensure that any in-flight polling request
                     // is always executed before an OnAfterPoll
                     OnPolling();
-                }, isLongRunning: true)
+                })
                 .ContinueWith(task =>
                 {
                     var next = TaskAsyncHelper.Empty;
                     Exception exception = null;
 
-                    if (task.IsFaulted || task.IsCanceled)
+                    if (task.IsFaulted)
                     {
-                        if (task.IsCanceled)
-                        {
-                            exception = new OperationCanceledException(Resources.Error_TaskCancelledException);
-                        }
-                        else
-                        {
-                            exception = task.Exception.Unwrap();
-                        }
+                        exception = task.Exception.Unwrap();
 
                         OnError(exception);
                     }
@@ -162,7 +154,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
         /// <summary>
         /// Aborts the currently active polling request, does not stop the Polling Request Handler.
         /// </summary>
-        private void Abort()
+        public void Abort()
         {
             OnAbort(_currentRequest);
 

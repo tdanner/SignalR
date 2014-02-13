@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common
+namespace Microsoft.AspNet.SignalR.FunctionalTests
 {
     public class MyGroupConnection : PersistentConnection
     {

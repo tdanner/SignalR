@@ -41,9 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.Diagnostics.Measurement" Condition="'$(PerfRun)'=='True'">
-      <SpecificVersion>false</SpecificVersion>
-      <HintPath>$(PerfToolsBin)\Microsoft.VisualStudio.Diagnostics.Measurement.dll</HintPath>
-      <Private>true</Private>
+      <HintPath>..\..\lib\Microsoft.VisualStudio.Diagnostics.Measurement.dll</HintPath>
     </Reference>
     <Reference Include="CmdLine">
       <HintPath>..\..\packages\CmdLine.1.0.7.509\lib\net40-Client\CmdLine.dll</HintPath>
@@ -83,7 +81,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <Import Project="..\Common\Microsoft.AspNet.SignalR.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

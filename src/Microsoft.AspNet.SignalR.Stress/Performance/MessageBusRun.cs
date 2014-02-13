@@ -17,13 +17,14 @@ namespace Microsoft.AspNet.SignalR.Stress
         public MessageBusRun(RunData runData)
             : base(runData)
         {
+
         }
 
         public override void Initialize()
         {
-            _bus = CreateMessageBus();
-
             base.Initialize();
+
+            _bus = CreateMessageBus();
         }
 
         protected virtual MessageBus CreateMessageBus()
@@ -46,15 +47,11 @@ namespace Microsoft.AspNet.SignalR.Stress
             return _bus.Publish(source, "a", Payload);
         }
 
-        protected override void Dispose(bool disposing)
+        public override void Dispose()
         {
-            if (_bus != null && disposing)
-            {
-                _bus.Dispose();
-                _bus = null;
-            }
+            _bus.Dispose();
 
-            base.Dispose(disposing);
+            base.Dispose();
         }
     }
 }

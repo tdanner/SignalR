@@ -1,7 +1,11 @@
-﻿﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
+﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
 
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Hubs;
+using Microsoft.AspNet.SignalR.Infrastructure;
+using Microsoft.AspNet.SignalR.SystemWeb.Infrastructure;
+using Microsoft.Owin.Host.SystemWeb;
 using Owin;
 
 namespace System.Web.Routing
@@ -17,10 +21,9 @@ namespace System.Web.Routing
         /// <param name="url">path of the route.</param>
         /// <returns>The registered route.</returns>
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "The type parameter is syntactic sugar")]
-        [Obsolete("Use IAppBuilder.MapSignalR<TConnection> in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapConnection<T>(this RouteCollection routes, string name, string url) where T : PersistentConnection
         {
-            throw new NotImplementedException();
+            return MapConnection(routes, name, url, typeof(T), new ConnectionConfiguration());
         }
 
         /// <summary>
@@ -33,10 +36,9 @@ namespace System.Web.Routing
         /// <param name="configuration">Configuration options.</param>
         /// <returns>The registered route.</returns>
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "The type parameter is syntactic sugar")]
-        [Obsolete("Use IAppBuilder.MapSignalR<TConnection> in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapConnection<T>(this RouteCollection routes, string name, string url, ConnectionConfiguration configuration) where T : PersistentConnection
         {
-            throw new NotImplementedException();
+            return MapConnection(routes, name, url, typeof(T), configuration);
         }
 
         /// <summary>
@@ -50,10 +52,9 @@ namespace System.Web.Routing
         /// <param name="build">An action to further configure the OWIN pipeline.</param>
         /// <returns>The registered route</returns>
         [SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter", Justification = "The type parameter is syntactic sugar")]
-        [Obsolete("Use IAppBuilder.MapSignalR<TConnection> in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapConnection<T>(this RouteCollection routes, string name, string url, ConnectionConfiguration configuration, Action<IAppBuilder> build) where T : PersistentConnection
         {
-            throw new NotImplementedException();
+            return MapConnection(routes, name, url, typeof(T), configuration, build);
         }
 
         /// <summary>
@@ -65,10 +66,11 @@ namespace System.Web.Routing
         /// <param name="type">The type of <see cref="PersistentConnection"/>.</param>
         /// <param name="configuration">Configuration options.</param>
         /// <returns>The registered route</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR<TConnection> in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapConnection(this RouteCollection routes, string name, string url, Type type, ConnectionConfiguration configuration)
         {
-            throw new NotImplementedException();
+            InitializeProtectedData(configuration);
+
+            return routes.MapOwinPath(name, url, map => map.MapConnection(String.Empty, type, configuration));
         }
 
         /// <summary>
@@ -80,11 +82,16 @@ namespace System.Web.Routing
         /// <param name="type">The type of <see cref="PersistentConnection"/>.</param>
         /// <param name="configuration">Configuration options.</param>
         /// <param name="build">An action to further configure the OWIN pipeline.</param>
-        /// <returns>The registered route</returns>.
-        [Obsolete("Use IAppBuilder.MapSignalR<TConnection> in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
+        /// <returns>The registered route</returns>
         public static RouteBase MapConnection(this RouteCollection routes, string name, string url, Type type, ConnectionConfiguration configuration, Action<IAppBuilder> build)
         {
-            throw new NotImplementedException();
+            InitializeProtectedData(configuration);
+
+            return routes.MapOwinPath(name, url, map =>
+            {
+                build(map);
+                map.MapConnection(String.Empty, type, configuration);
+            });
         }
 
         /// <summary>
@@ -92,10 +99,9 @@ namespace System.Web.Routing
         /// </summary>
         /// <param name="routes">The route table.</param>
         /// <returns>The registered route.</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapHubs(this RouteCollection routes)
         {
-            throw new NotImplementedException();
+            return routes.MapHubs(new HubConfiguration());
         }
 
         /// <summary>
@@ -104,10 +110,9 @@ namespace System.Web.Routing
         /// <param name="routes">The route table.</param>
         /// <param name="configuration">Configuration options.</param>
         /// <returns>The registered route.</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapHubs(this RouteCollection routes, HubConfiguration configuration)
         {
-            throw new NotImplementedException();
+            return routes.MapHubs("/signalr", configuration);
         }
 
         /// <summary>
@@ -117,10 +122,19 @@ namespace System.Web.Routing
         /// <param name="path">The path of the hubs route.</param>
         /// <param name="configuration">Configuration options.</param>
         /// <returns>The registered route.</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapHubs(this RouteCollection routes, string path, HubConfiguration configuration)
         {
-            throw new NotImplementedException();
+            if (routes == null)
+            {
+                throw new ArgumentNullException("routes");
+            }
+
+            if (configuration == null)
+            {
+                throw new ArgumentNullException("configuration");
+            }
+
+            return routes.MapHubs("signalr.hubs", path, configuration, _ => { });
         }
 
         /// <summary>
@@ -131,10 +145,19 @@ namespace System.Web.Routing
         /// <param name="configuration">Configuration options.</param>
         /// <param name="build">An action to further configure the OWIN pipeline.</param>
         /// <returns>The registered route.</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         public static RouteBase MapHubs(this RouteCollection routes, string path, HubConfiguration configuration, Action<IAppBuilder> build)
         {
-            throw new NotImplementedException();
+            if (routes == null)
+            {
+                throw new ArgumentNullException("routes");
+            }
+
+            if (configuration == null)
+            {
+                throw new ArgumentNullException("configuration");
+            }
+
+            return routes.MapHubs("signalr.hubs", path, configuration, build);
         }
 
         /// <summary>
@@ -146,10 +169,24 @@ namespace System.Web.Routing
         /// <param name="configuration">Configuration options.</param>
         /// <param name="build"></param>
         /// <returns>The registered route.</returns>
-        [Obsolete("Use IAppBuilder.MapSignalR in an Owin Startup class. See http://go.microsoft.com/fwlink/?LinkId=320578 for more details.", true)]
         internal static RouteBase MapHubs(this RouteCollection routes, string name, string path, HubConfiguration configuration, Action<IAppBuilder> build)
         {
-            throw new NotImplementedException();
+            var locator = new Lazy<IAssemblyLocator>(() => new BuildManagerAssemblyLocator());
+            configuration.Resolver.Register(typeof(IAssemblyLocator), () => locator.Value);
+
+            InitializeProtectedData(configuration);
+
+            return routes.MapOwinPath(name, path, map =>
+            {
+                build(map);
+                map.MapHubs(String.Empty, configuration);
+            });
+        }
+
+        private static void InitializeProtectedData(ConnectionConfiguration configuration)
+        {
+            var protectedData = new MachineKeyProtectedData();
+            configuration.Resolver.Register(typeof(IProtectedData), () => protectedData);
         }
     }
 }

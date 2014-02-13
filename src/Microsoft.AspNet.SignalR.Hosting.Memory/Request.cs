@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNet.SignalR.Owin;
@@ -35,21 +34,18 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:No upstream or protected callers", Justification = "Not Implemented")]
         public ICredentials Credentials
         {
             get;
             set;
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:No upstream or protected callers", Justification = "Not Implemented")]
         public CookieContainer CookieContainer
         {
             get;
             set;
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:No upstream or protected callers", Justification = "Not Implemented")]
         public IWebProxy Proxy
         {
             get;
@@ -93,9 +89,6 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
             }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1811:No upstream or protected callers", Justification = "Not Implemented")]
-        [SuppressMessage("Microsoft.Performance", "CA1822:Never used", Justification = "Not Implemented")]
-        [SuppressMessage("Microsoft.Performance", "CA1801:Parameter not being used", Justification = "Not Implemented")]
         public void AddClientCerts(X509CertificateCollection certificates)
         {
         }

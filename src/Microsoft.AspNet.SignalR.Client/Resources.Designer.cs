@@ -75,24 +75,6 @@ namespace Microsoft.AspNet.SignalR.Client {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to A client callback for event {0} with {1} argument(s) was found, however an error occurred because {2}.
-        /// </summary>
-        internal static string Error_ClientCallbackArgumentTypeMismatch {
-            get {
-                return ResourceManager.GetString("Error_ClientCallbackArgumentTypeMismatch", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to A client callback for event {0} with {1} argument(s) could not be found.
-        /// </summary>
-        internal static string Error_ClientCallbackInvalidNumberOfArguments {
-            get {
-                return ResourceManager.GetString("Error_ClientCallbackInvalidNumberOfArguments", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to The connection was stopped before it could be started..
         /// </summary>
         internal static string Error_ConnectionCancelled {
@@ -111,11 +93,11 @@ namespace Microsoft.AspNet.SignalR.Client {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Data cannot be sent as connection is disconnected. Call start before sending any data..
+        ///   Looks up a localized string similar to Request headers cannot be set after the connection has started..
         /// </summary>
-        internal static string Error_DataCannotBeSentConnectionDisconnected {
+        internal static string Error_HeadersCanOnlyBeSetWhenDisconnected {
             get {
-                return ResourceManager.GetString("Error_DataCannotBeSentConnectionDisconnected", resourceCulture);
+                return ResourceManager.GetString("Error_HeadersCanOnlyBeSetWhenDisconnected", resourceCulture);
             }
         }
         
@@ -147,29 +129,11 @@ namespace Microsoft.AspNet.SignalR.Client {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Request failed - task cancelled..
+        ///   Looks up a localized string similar to The Start method must be called before data can be sent..
         /// </summary>
-        internal static string Error_TaskCancelledException {
+        internal static string Error_StartMustBeCalledBeforeDataCanBeSent {
             get {
-                return ResourceManager.GetString("Error_TaskCancelledException", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Transport failed trying to connect..
-        /// </summary>
-        internal static string Error_TransportFailedToConnect {
-            get {
-                return ResourceManager.GetString("Error_TransportFailedToConnect", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Transport timed out trying to connect.
-        /// </summary>
-        internal static string Error_TransportTimedOutTryingToConnect {
-            get {
-                return ResourceManager.GetString("Error_TransportTimedOutTryingToConnect", resourceCulture);
+                return ResourceManager.GetString("Error_StartMustBeCalledBeforeDataCanBeSent", resourceCulture);
             }
         }
         

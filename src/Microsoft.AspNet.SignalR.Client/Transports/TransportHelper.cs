@@ -13,7 +13,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
 {
     public static class TransportHelper
     {
-        public static Task<NegotiationResponse> GetNegotiationResponse(this IHttpClient httpClient, IConnection connection, string connectionData)
+        public static Task<NegotiationResponse> GetNegotiationResponse(this IHttpClient httpClient, IConnection connection)
         {
             if (httpClient == null)
             {
@@ -25,29 +25,14 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                 throw new ArgumentNullException("connection");
             }
 
-#if PORTABLE
+#if SILVERLIGHT || WINDOWS_PHONE
             string negotiateUrl = connection.Url + "negotiate?" + GetNoCacheUrlParam();
 #else
             string negotiateUrl = connection.Url + "negotiate";
 #endif
             negotiateUrl += AppendCustomQueryString(connection, negotiateUrl);
 
-            char appender = '?';
-            if (negotiateUrl.Contains("?"))
-            {
-                appender = '&';
-            }
-
-            negotiateUrl += appender + "clientProtocol=" + connection.Protocol;
-
-            if (!String.IsNullOrEmpty(connectionData))
-            {
-                negotiateUrl += "&connectionData=" + connectionData;
-            }
-
-            httpClient.Initialize(connection);
-
-            return httpClient.Get(negotiateUrl, connection.PrepareRequest, isLongRunning: false)
+            return httpClient.Get(negotiateUrl, connection.PrepareRequest)
                             .Then(response => response.ReadAsString())
                             .Then(raw =>
                             {
@@ -61,7 +46,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
         }
 
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", Justification = "This is called by internally")]
-        public static string GetReceiveQueryString(IConnection connection, string connectionData, string transport)
+        public static string GetReceiveQueryString(IConnection connection, string data, string transport)
         {
             if (connection == null)
             {
@@ -83,9 +68,9 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                 qsBuilder.Append("&groupsToken=" + Uri.EscapeDataString(connection.GroupsToken));
             }
 
-            if (connectionData != null)
+            if (data != null)
             {
-                qsBuilder.Append("&connectionData=" + connectionData);
+                qsBuilder.Append("&connectionData=" + data);
             }
 
             string customQuery = connection.QueryString;
@@ -95,7 +80,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                 qsBuilder.Append("&").Append(customQuery);
             }
 
-#if PORTABLE
+#if SILVERLIGHT || WINDOWS_PHONE
             qsBuilder.Append("&").Append(GetNoCacheUrlParam());
 #endif
             return qsBuilder.ToString();
@@ -139,16 +124,10 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             return qs;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", Justification = "This is called internally.")]
-        public static void ProcessResponse(IConnection connection, string response, out bool shouldReconnect, out bool disconnected)
-        {
-            ProcessResponse(connection, response, out shouldReconnect, out disconnected, () => { });
-        }
-
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", Justification = "This is called internally.")]
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", Justification = "This is called internally.")]
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "The client receives the exception in the OnError callback.")]
-        public static void ProcessResponse(IConnection connection, string response, out bool shouldReconnect, out bool disconnected, Action onInitialized)
+        public static void ProcessResponse(IConnection connection, string response, out bool timedOut, out bool disconnected)
         {
             if (connection == null)
             {
@@ -157,7 +136,7 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
 
             connection.UpdateLastKeepAlive();
 
-            shouldReconnect = false;
+            timedOut = false;
             disconnected = false;
 
             if (String.IsNullOrEmpty(response))
@@ -180,8 +159,8 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                     return;
                 }
 
-                shouldReconnect = (int?)result["T"] == 1;
-                disconnected = (int?)result["D"] == 1;
+                timedOut = result.Value<int>("T") == 1;
+                disconnected = result.Value<int>("D") == 1;
 
                 if (disconnected)
                 {
@@ -193,14 +172,19 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
                 var messages = result["M"] as JArray;
                 if (messages != null)
                 {
-                    connection.MessageId = (string)result["C"];
-
                     foreach (JToken message in messages)
                     {
-                        connection.OnReceived(message);
+                        try
+                        {
+                            connection.OnReceived(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            connection.OnError(ex);
+                        }
                     }
 
-                    TryInitialize(result, onInitialized);
+                    connection.MessageId = result["C"].Value<string>();
                 }
             }
             catch (Exception ex)
@@ -209,11 +193,12 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
             }
         }
 
+
         private static void UpdateGroups(IConnection connection, JToken groupsToken)
         {
             if (groupsToken != null)
             {
-                connection.GroupsToken = (string)groupsToken;
+                connection.GroupsToken = groupsToken.Value<string>();
             }
         }
 
@@ -221,15 +206,6 @@ namespace Microsoft.AspNet.SignalR.Client.Transports
         private static string GetNoCacheUrlParam()
         {
             return "noCache=" + Guid.NewGuid().ToString();
-        }
-
-        private static void TryInitialize(JToken response, Action onInitialized)
-        {
-            if ((int?)response["S"] == 1)
-            {
-                onInitialized();
-            }
-
         }
     }
 }

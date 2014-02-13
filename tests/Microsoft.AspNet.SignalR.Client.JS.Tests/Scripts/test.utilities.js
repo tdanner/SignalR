@@ -1,8 +1,5 @@
 ﻿var testUtilities;
 
-// Clear session storage so QUnit does not try to re-run failed tests first.
-window.sessionStorage.clear();
-
 (function ($, window) {
     var ios = !!navigator.userAgent.match(/iPod|iPhone|iPad/),
         rfcWebSockets = !!window.WebSocket,
@@ -52,47 +49,15 @@ window.sessionStorage.clear();
                 }
             });
         },
-        theory: function (data, fn) {
-            /// <summary>Executes fn using the data.</summary>
-            /// <param name="data" type="Array">An array of objects containing the theory data.</param>
-            /// <param name="fn" type="Function">The function to invoke for each theory data instance.</param>
-            function executeWithArgs(argsObject, fn) {
-                var args = [argsObject];
-
-                if ($.type(argsObject) === "object") {
-                    for (var name in argsObject) {
-                        args.push(argsObject[name]);
-                    }
-                }
-
-                fn.apply(undefined, args);
-            }
-
-            switch ($.type(data)) {
-                case "object":
-                    executeWithArgs(data, fn);
-                    break;
-
-                case "array":
-                    $.each(data, function (_, d) {
-                        executeWithArgs(d, fn);
-                    });
-                    break;
-                
-                default:
-                    fn(data);
-                    break;
-            }
-        },
         defaultTestTimeout: (function () {
             var defaultTestTimeout = window.location.search.match(/defaultTestTimeout=(\d+)/);
-
+            
             // There is no default test timeout parameter
             if (!defaultTestTimeout) {
                 // Return the default
                 return 10000;
             }
-
+            
             // Match returns an array, so we need to take the second element (string).
             defaultTestTimeout = defaultTestTimeout[1];
             // Convert to integer and translate to milliseconds
@@ -100,11 +65,10 @@ window.sessionStorage.clear();
 
             return defaultTestTimeout;
         })(),
-        createHubConnection: function (end, assert, testName, url, wrapStart) {
+        createHubConnection: function (end, assert, testName, url) {
             var connection,
-                qs = (testName ? "test=" + window.encodeURIComponent(testName) : "");
-
-            wrapStart = typeof wrapStart === "undefined" ? true : false;
+                qs = (testName ? "test=" + window.encodeURIComponent(testName) : ""),
+                urlSet = !!url;
 
             url = url ? url : 'signalr';
             if (window.document.testUrl !== 'auto') {
@@ -113,18 +77,13 @@ window.sessionStorage.clear();
 
             connection = $.hubConnection(url, { useDefaultPath: false, qs: qs })
             connection.logging = true;
-
-            if (wrapStart) {
-                wrapConnectionStart(connection, end, assert);
-            }
+            wrapConnectionStart(connection, end, assert);
 
             return connection;
         },
-        createConnection: function (url, end, assert, testName, wrapStart) {
+        createConnection: function (url, end, assert, testName) {
             var connection,
                 qs = (testName ? "test=" + window.encodeURIComponent(testName) : "");
-
-            wrapStart = typeof wrapStart === "undefined" ? true : false;
 
             if (window.document.testUrl !== 'auto') {
                 url = window.document.testUrl + url;
@@ -132,10 +91,7 @@ window.sessionStorage.clear();
 
             connection = $.connection(url, qs);
             connection.logging = true;
-
-            if (wrapStart) {
-                wrapConnectionStart(connection, end, assert);
-            }
+            wrapConnectionStart(connection, end, assert);
 
             return connection;
         }

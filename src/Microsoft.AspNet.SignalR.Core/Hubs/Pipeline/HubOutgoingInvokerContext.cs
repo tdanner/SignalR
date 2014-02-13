@@ -7,18 +7,12 @@ namespace Microsoft.AspNet.SignalR.Hubs
 {
     internal class HubOutgoingInvokerContext : IHubOutgoingInvokerContext
     {        
-        public HubOutgoingInvokerContext(IConnection connection, string signal, ClientHubInvocation invocation)
+        public HubOutgoingInvokerContext(IConnection connection, string signal, ClientHubInvocation invocation, IList<string> excludedSignals)
         {
             Connection = connection;
             Signal = signal;
             Invocation = invocation;
-        }
-
-        public HubOutgoingInvokerContext(IConnection connection, IList<string> signals, ClientHubInvocation invocation)
-        {
-            Connection = connection;
-            Signals = signals;
-            Invocation = invocation;
+            ExcludedSignals = excludedSignals;
         }
 
         public IConnection Connection
@@ -39,16 +33,10 @@ namespace Microsoft.AspNet.SignalR.Hubs
             private set;
         }
 
-        public IList<string> Signals
-        {
-            get;
-            private set;
-        }
-
         public IList<string> ExcludedSignals
         {
             get;
-            set;
+            private set;
         }
     }
 }

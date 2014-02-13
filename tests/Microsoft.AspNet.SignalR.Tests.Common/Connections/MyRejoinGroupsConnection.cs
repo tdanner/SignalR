@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common
+namespace Microsoft.AspNet.SignalR.FunctionalTests
 {
     public class MyRejoinGroupsConnection : MyGroupConnection
     {

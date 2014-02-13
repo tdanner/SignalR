@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Threading.Tasks;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common
+namespace Microsoft.AspNet.SignalR.FunctionalTests
 {
     public class MyBadConnection : PersistentConnection
     {

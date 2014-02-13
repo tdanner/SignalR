@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Messaging;
@@ -42,34 +40,13 @@ namespace Microsoft.AspNet.SignalR
         /// <returns>A task that represents when send is complete.</returns>
         public Task Send(string groupName, object value, params string[] excludeConnectionIds)
         {
-            if (String.IsNullOrEmpty(groupName))
+            if (string.IsNullOrEmpty(groupName))
             {
                 throw new ArgumentException((Resources.Error_ArgumentNullOrEmpty), "groupName");
             }
 
             var qualifiedName = CreateQualifiedName(groupName);
             var message = new ConnectionMessage(qualifiedName,
-                                                value,
-                                                PrefixHelper.GetPrefixedConnectionIds(excludeConnectionIds));
-
-            return _connection.Send(message);
-        }
-
-        /// <summary>
-        /// Sends a value to the specified group.
-        /// </summary>
-        /// <param name="groupNames">The names of the groups.</param>
-        /// <param name="value">The value to send.</param>
-        /// <param name="excludeConnectionIds">The list of connection ids to exclude</param>
-        /// <returns>A task that represents when send is complete.</returns>
-        public Task Send(IList<string> groupNames, object value, params string[] excludeConnectionIds)
-        {
-            if (groupNames == null)
-            {
-                throw new ArgumentNullException("groupNames");
-            }
-
-            var message = new ConnectionMessage(groupNames.Select(groupName => CreateQualifiedName(groupName)).ToList(),
                                                 value,
                                                 PrefixHelper.GetPrefixedConnectionIds(excludeConnectionIds));
 

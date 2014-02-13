@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,14 +13,13 @@ using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Messaging;
 using Microsoft.AspNet.SignalR.Tracing;
 using Microsoft.AspNet.SignalR.Transports;
-using Newtonsoft.Json;
 
 namespace Microsoft.AspNet.SignalR.Infrastructure
 {
     public class Connection : IConnection, ITransportConnection, ISubscriber
     {
         private readonly IMessageBus _bus;
-        private readonly JsonSerializer _serializer;
+        private readonly IJsonSerializer _serializer;
         private readonly string _baseSignal;
         private readonly string _connectionId;
         private readonly IList<string> _signals;
@@ -30,13 +28,12 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
         private bool _disconnected;
         private bool _aborted;
-        private bool _initializing;
         private readonly TraceSource _traceSource;
         private readonly IAckHandler _ackHandler;
         private readonly IProtectedData _protectedData;
 
         public Connection(IMessageBus newMessageBus,
-                          JsonSerializer jsonSerializer,
+                          IJsonSerializer jsonSerializer,
                           string baseSignal,
                           string connectionId,
                           IList<string> signals,
@@ -110,84 +107,30 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
         public Task Send(ConnectionMessage message)
         {
-            if (!String.IsNullOrEmpty(message.Signal) &&
-                message.Signals != null)
+            Message busMessage = CreateMessage(message.Signal, message.Value);
+
+            if (message.ExcludedSignals != null)
             {
-                throw new InvalidOperationException(
-                    String.Format(CultureInfo.CurrentCulture,
-                                  Resources.Error_AmbiguousMessage,
-                                  message.Signal,
-                                  String.Join(", ", message.Signals)));
+                busMessage.Filter = String.Join("|", message.ExcludedSignals);
             }
 
-            if (message.Signals != null)
+            if (busMessage.WaitForAck)
             {
-                return MultiSend(message.Signals, message.Value, message.ExcludedSignals);
-            }
-            else
-            {
-                Message busMessage = CreateMessage(message.Signal, message.Value);
-
-                busMessage.Filter = GetFilter(message.ExcludedSignals);
-
-                if (busMessage.WaitForAck)
-                {
-                    Task ackTask = _ackHandler.CreateAck(busMessage.CommandId);
-                    return _bus.Publish(busMessage).Then(task => task, ackTask);
-                }
-
-                return _bus.Publish(busMessage);
-            }
-        }
-
-        private Task MultiSend(IList<string> signals, object value, IList<string> excludedSignals)
-        {
-            if (signals.Count == 0)
-            {
-                // If there's nobody to send to then do nothing
-                return TaskAsyncHelper.Empty;
+                Task ackTask = _ackHandler.CreateAck(busMessage.CommandId);
+                return _bus.Publish(busMessage).Then(task => task, ackTask);
             }
 
-            // Serialize once
-            ArraySegment<byte> messageBuffer = GetMessageBuffer(value);
-            string filter = GetFilter(excludedSignals); 
-
-            var tasks = new Task[signals.Count];
-
-            // Send the same data to each connection id
-            for (int i = 0; i < signals.Count; i++)
-            {
-                var message = new Message(_connectionId, signals[i], messageBuffer);
-
-                if (!String.IsNullOrEmpty(filter))
-                {
-                    message.Filter = filter;
-                }
-
-                tasks[i] = _bus.Publish(message);
-            }
-
-            // Return a task that represents all
-            return TaskEx.WhenAll(tasks);
-        }
-
-        private static string GetFilter(IList<string> excludedSignals)
-        {
-            if (excludedSignals != null)
-            {
-                return String.Join("|", excludedSignals);
-            }
-
-            return null;
+            return _bus.Publish(busMessage);
         }
 
         private Message CreateMessage(string key, object value)
         {
+            var command = value as Command;
+
             ArraySegment<byte> messageBuffer = GetMessageBuffer(value);
 
             var message = new Message(_connectionId, key, messageBuffer);
 
-            var command = value as Command;
             if (command != null)
             {
                 // Set the command id
@@ -199,22 +142,6 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
         }
 
         private ArraySegment<byte> GetMessageBuffer(object value)
-        {
-            ArraySegment<byte> messageBuffer;
-            // We can't use "as" like we do for Command since ArraySegment is a struct
-            if (value is ArraySegment<byte>)
-            {
-                // We assume that any ArraySegment<byte> is already JSON serialized
-                messageBuffer = (ArraySegment<byte>)value;
-            }
-            else
-            {
-                messageBuffer = SerializeMessageValue(value);
-            }
-            return messageBuffer;
-        }
-
-        private ArraySegment<byte> SerializeMessageValue(object value)
         {
             using (var stream = new MemoryStream(128))
             {
@@ -271,8 +198,6 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
                 response.Disconnect = _disconnected;
                 response.Aborted = _aborted;
                 response.TotalCount = result.TotalCount;
-                response.Initializing = _initializing;
-                _initializing = false;
             }
 
             PopulateResponseState(response);
@@ -351,9 +276,6 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
                         }
                     }
                     break;
-                case CommandType.Initializing:
-                    _initializing = true;
-                    break;
                 case CommandType.Disconnect:
                     _disconnected = true;
                     break;
@@ -370,7 +292,7 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
         internal static void PopulateResponseState(PersistentResponse response,
                                                    DiffSet<string> groupSet,
-                                                   JsonSerializer serializer,
+                                                   IJsonSerializer serializer,
                                                    IProtectedData protectedData,
                                                    string connectionId)
         {

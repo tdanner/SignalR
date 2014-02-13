@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
 
 using System;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
@@ -9,7 +8,6 @@ using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.AspNet.SignalR.Json;
 using Microsoft.AspNet.SignalR.Tracing;
-using Newtonsoft.Json;
 
 namespace Microsoft.AspNet.SignalR.Transports
 {
@@ -17,14 +15,14 @@ namespace Microsoft.AspNet.SignalR.Transports
     public abstract class ForeverTransport : TransportDisconnectBase, ITransport
     {
         private readonly IPerformanceCounterManager _counters;
-        private JsonSerializer _jsonSerializer;
+        private IJsonSerializer _jsonSerializer;
         private string _lastMessageId;
 
         private const int MaxMessages = 10;
 
         protected ForeverTransport(HostContext context, IDependencyResolver resolver)
             : this(context,
-                   resolver.Resolve<JsonSerializer>(),
+                   resolver.Resolve<IJsonSerializer>(),
                    resolver.Resolve<ITransportHeartbeat>(),
                    resolver.Resolve<IPerformanceCounterManager>(),
                    resolver.Resolve<ITraceManager>())
@@ -32,7 +30,7 @@ namespace Microsoft.AspNet.SignalR.Transports
         }
 
         protected ForeverTransport(HostContext context,
-                                   JsonSerializer jsonSerializer,
+                                   IJsonSerializer jsonSerializer,
                                    ITransportHeartbeat heartbeat,
                                    IPerformanceCounterManager performanceCounterWriter,
                                    ITraceManager traceManager)
@@ -55,7 +53,7 @@ namespace Microsoft.AspNet.SignalR.Transports
             }
         }
 
-        protected JsonSerializer JsonSerializer
+        protected IJsonSerializer JsonSerializer
         {
             get { return _jsonSerializer; }
         }
@@ -100,7 +98,7 @@ namespace Microsoft.AspNet.SignalR.Transports
         {
             Connection = connection;
 
-            if (Context.Request.LocalPath.EndsWith("/send", StringComparison.OrdinalIgnoreCase))
+            if (Context.Request.Url.LocalPath.EndsWith("/send", StringComparison.OrdinalIgnoreCase))
             {
                 return ProcessSendRequest();
             }
@@ -151,15 +149,16 @@ namespace Microsoft.AspNet.SignalR.Transports
             return TaskAsyncHelper.Empty;
         }
 
-        private async Task ProcessSendRequest()
+        private Task ProcessSendRequest()
         {
-            INameValueCollection form = await Context.Request.ReadForm();
-            string data = form["data"];
+            string data = Context.Request.Form["data"];
 
             if (Received != null)
             {
-                await Received(data);
+                return Received(data);
             }
+
+            return TaskAsyncHelper.Empty;
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exceptions are flowed to the caller.")]
@@ -167,29 +166,16 @@ namespace Microsoft.AspNet.SignalR.Transports
         {
             Func<Task> initialize = null;
 
-            // If this transport isn't replacing an existing transport, oldConnection will be null.
-            ITrackingConnection oldConnection = Heartbeat.AddOrUpdateConnection(this);
-            bool newConnection = oldConnection == null;
+            bool newConnection = Heartbeat.AddConnection(this);
 
             if (IsConnectRequest)
             {
-                Func<Task> connected;
                 if (newConnection)
                 {
-                    connected = Connected ?? _emptyTaskFunc;
+                    initialize = Connected;
+
                     _counters.ConnectionsConnected.Increment();
                 }
-                else
-                {
-                    // Wait until the previous call to Connected completes.
-                    // We don't want to call Connected twice
-                    connected = () => oldConnection.ConnectTask;
-                }
-
-                initialize = () =>
-                {
-                    return connected().Then((conn, id) => conn.Initialize(id), connection, ConnectionId);
-                };
             }
             else
             {
@@ -205,7 +191,7 @@ namespace Microsoft.AspNet.SignalR.Transports
             var states = new object[] { TransportConnected ?? _emptyTaskFunc,
                                         initialize ?? _emptyTaskFunc };
 
-            Func<Task> fullInit = () => TaskAsyncHelper.Series(series, states).ContinueWith(_connectTcs);
+            Func<Task> fullInit = () => TaskAsyncHelper.Series(series, states);
 
             return ProcessMessages(connection, fullInit);
         }
@@ -287,7 +273,7 @@ namespace Microsoft.AspNet.SignalR.Transports
         {
             var context = (MessageContext)state;
 
-            response.Reconnect = context.Transport.HostShutdownToken.IsCancellationRequested;
+            response.TimedOut = context.Transport.IsTimedOut;
 
             // If we're telling the client to disconnect then clean up the instantiated connection.
             if (response.Disconnect)
@@ -296,7 +282,7 @@ namespace Microsoft.AspNet.SignalR.Transports
                 return context.Transport.Send(response).Then(c => OnDisconnectMessage(c), context)
                                         .Then(() => TaskAsyncHelper.False);
             }
-            else if (context.Transport.IsTimedOut || response.Aborted)
+            else if (response.TimedOut || response.Aborted)
             {
                 context.Registration.Dispose();
 
@@ -345,7 +331,7 @@ namespace Microsoft.AspNet.SignalR.Transports
             context.Transport.JsonSerializer.Serialize(context.State, context.Transport.OutputWriter);
             context.Transport.OutputWriter.Flush();
 
-            return TaskAsyncHelper.Empty;
+            return context.Transport.Context.Response.End();
         }
 
         private static void OnError(AggregateException ex, object state)

@@ -7,7 +7,6 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 
 namespace Microsoft.AspNet.SignalR.Client
 {
-#if !PORTABLE
     public class ObservableConnection<T> : IObservable<T>
     {
         private readonly Connection _connection;
@@ -58,5 +57,4 @@ namespace Microsoft.AspNet.SignalR.Client
             });
         }
     }
-#endif
 }

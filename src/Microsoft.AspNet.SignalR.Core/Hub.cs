@@ -16,12 +16,15 @@ namespace Microsoft.AspNet.SignalR
         protected Hub()
         {
             Clients = new HubConnectionContext();
+            Clients.All = new NullClientProxy();
+            Clients.Others = new NullClientProxy();
+            Clients.Caller = new NullClientProxy();
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public IHubCallerConnectionContext Clients { get; set; }
+        public HubConnectionContext Clients { get; set; }
 
         /// <summary>
         /// Provides information about the calling client.

@@ -47,7 +47,7 @@ namespace Microsoft.AspNet.SignalR.Hosting.Memory
 
         public override void Flush()
         {
-            _networkObservable.Flush();
+            throw new NotImplementedException();
         }
 
         public override Task FlushAsync(CancellationToken cancellationToken)

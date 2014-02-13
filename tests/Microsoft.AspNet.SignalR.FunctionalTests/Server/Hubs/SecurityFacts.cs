@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Client.Transports.ServerSentEvents;
 using Microsoft.AspNet.SignalR.Hosting.Memory;
 using Microsoft.AspNet.SignalR.Infrastructure;
-using Microsoft.AspNet.SignalR.Tests.Common;
 using Newtonsoft.Json;
 using Owin;
 using Xunit;
@@ -28,56 +27,54 @@ namespace Microsoft.AspNet.SignalR.FunctionalTests.Server.Hubs
                         Resolver = new DefaultDependencyResolver()
                     };
 
-                    app.MapSignalR<MyGroupConnection>("/echo", config);
+                    app.MapConnection<MyGroupConnection>("/echo", config);
 
                     protectedData = config.Resolver.Resolve<IProtectedData>();
                 });
 
                 var connection = new Client.Connection("http://memoryhost/echo");
+                var inGroup = new ManualResetEventSlim();
 
-                using (connection)
+                connection.Received += data =>
                 {
-                    var inGroup = new ManualResetEventSlim();
-
-                    connection.Received += data =>
+                    if (data == "group")
                     {
-                        if (data == "group")
-                        {
-                            inGroup.Set();
-                        }
-                    };
+                        inGroup.Set();
+                    }
+                };
 
-                    connection.Start(host).Wait();
+                connection.Start(host).Wait();
 
-                    inGroup.Wait();
+                inGroup.Wait();
 
-                    Assert.NotNull(connection.GroupsToken);
+                Assert.NotNull(connection.GroupsToken);
 
-                    var spyWh = new ManualResetEventSlim();
-                    var hackerConnection = new Client.Connection(connection.Url)
+                var spyWh = new ManualResetEventSlim();
+                var hackerConnection = new Client.Connection(connection.Url)
+                {
+                    ConnectionId = "hacker"
+                };
+
+                var url = GetUrl(protectedData, connection, connection.GroupsToken);
+                var response = host.Get(url).Result;
+                var reader = new EventSourceStreamReader(hackerConnection, response.GetStream());
+
+                reader.Message = sseEvent =>
+                {
+                    if (sseEvent.EventType == EventType.Data &&
+                        sseEvent.Data != "initialized" &&
+                        sseEvent.Data != "{}")
                     {
-                        ConnectionId = "hacker"
-                    };
+                        spyWh.Set();
+                    }
+                };
 
-                    var url = GetUrl(protectedData, connection, connection.GroupsToken);
-                    var response = host.Get(url).Result;
-                    var reader = new EventSourceStreamReader(hackerConnection, response.GetStream());
+                reader.Start();
+                connection.Send("random").Wait();
 
-                    reader.Message = sseEvent =>
-                    {
-                        if (sseEvent.EventType == EventType.Data &&
-                            sseEvent.Data != "initialized" &&
-                            sseEvent.Data != "{}")
-                        {
-                            spyWh.Set();
-                        }
-                    };
+                Assert.False(spyWh.Wait(TimeSpan.FromSeconds(5)));
 
-                    reader.Start();
-                    connection.Send("random").Wait();
-
-                    Assert.False(spyWh.Wait(TimeSpan.FromSeconds(5)));
-                }
+                connection.Stop();
             }
         }
 
@@ -95,63 +92,62 @@ namespace Microsoft.AspNet.SignalR.FunctionalTests.Server.Hubs
                         Resolver = new DefaultDependencyResolver()
                     };
 
-                    app.MapSignalR<MyConnection>("/echo", config);
+                    app.MapConnection<MyConnection>("/echo", config);
 
                     protectedData = config.Resolver.Resolve<IProtectedData>();
                 });
 
                 var connection = new Client.Connection("http://memoryhost/echo");
 
-                using (connection)
+                var connectionTcs = new TaskCompletionSource<string>();
+                var spyTcs = new TaskCompletionSource<string>();
+
+                connection.Received += data =>
                 {
-                    var connectionTcs = new TaskCompletionSource<string>();
-                    var spyTcs = new TaskCompletionSource<string>();
+                    connectionTcs.SetResult(data.Trim());
+                };
 
-                    connection.Received += data =>
+                connection.Start(host).Wait();
+
+                var tcs = new TaskCompletionSource<object>();
+                EventSourceStreamReader reader = null;
+
+                Task.Run(async () =>
+                {
+                    try
                     {
-                        connectionTcs.SetResult(data.Trim());
-                    };
+                        string url = GetUrl(protectedData, connection);
+                        var response = await host.Get(url);
+                        reader = new EventSourceStreamReader(connection, response.GetStream());
 
-                    connection.Start(host).Wait();
-
-                    var tcs = new TaskCompletionSource<object>();
-                    EventSourceStreamReader reader = null;
-
-                    Task.Run(async () =>
-                    {
-                        try
+                        reader.Message = sseEvent =>
                         {
-                            string url = GetUrl(protectedData, connection);
-                            var response = await host.Get(url);
-                            reader = new EventSourceStreamReader(connection, response.GetStream());
-
-                            reader.Message = sseEvent =>
+                            if (sseEvent.EventType == EventType.Data &&
+                                sseEvent.Data != "initialized" &&
+                                sseEvent.Data != "{}")
                             {
-                                if (sseEvent.EventType == EventType.Data &&
-                                    sseEvent.Data != "initialized" &&
-                                    sseEvent.Data != "{}")
-                                {
-                                    spyTcs.TrySetResult(sseEvent.Data);
-                                }
-                            };
+                                spyTcs.TrySetResult(sseEvent.Data);
+                            }
+                        };
 
-                            reader.Start();
-                            tcs.TrySetResult(null);
-                        }
-                        catch (Exception ex)
-                        {
-                            tcs.TrySetException(ex);
-                        }
-                    });
+                        reader.Start();
+                        tcs.TrySetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        tcs.TrySetException(ex);
+                    }
+                });
 
-                    tcs.Task.Wait();
+                tcs.Task.Wait();
 
-                    connection.SendWithTimeout("STUFFF");
+                connection.SendWithTimeout("STUFFF");
 
-                    Assert.True(connectionTcs.Task.Wait(TimeSpan.FromSeconds(5)));
-                    Assert.Equal("STUFFF", connectionTcs.Task.Result);
-                    Assert.False(spyTcs.Task.Wait(TimeSpan.FromSeconds(5)));
-                }
+                Assert.True(connectionTcs.Task.Wait(TimeSpan.FromSeconds(5)));
+                Assert.Equal("STUFFF", connectionTcs.Task.Result);
+                Assert.False(spyTcs.Task.Wait(TimeSpan.FromSeconds(5)));
+
+                connection.Stop();
             }
         }
 

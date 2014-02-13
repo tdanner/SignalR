@@ -1,6 +1,5 @@
 ﻿// Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.md in the project root for license information.
 
-using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.AspNet.SignalR
 {
     public class ConnectionConfiguration
@@ -18,13 +17,8 @@ namespace Microsoft.AspNet.SignalR
         }
 
         /// <summary>
-        /// Gets of sets a boolean that determines if JSONP is enabled.
+        /// Determines if browsers can make cross domain requests to SignalR endpoints.
         /// </summary>
-        [SuppressMessage("Microsoft.Naming", "CA1709:IdentifiersShouldBeCasedCorrectly", MessageId = "JSONP", Justification = "JSONP is a known technology")]
-        public bool EnableJSONP
-        {
-            get;
-            set;
-        }
+        public bool EnableCrossDomain { get; set; }
     }
 }

@@ -24,23 +24,16 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
 
         public CancellationToken Token { get; private set; }
 
-        public void Cancel(bool useNewThread = true)
+        public void Cancel()
         {
             var value = Interlocked.CompareExchange(ref _state, State.Cancelling, State.Initial);
 
             if (value == State.Initial)
             {
-
-                if (!useNewThread)
-                {
-                    CancelCore();
-                    return;
-                }
-
                 // Because cancellation tokens are so poorly behaved, always invoke the cancellation token on 
                 // another thread. Don't capture any of the context (execution context or sync context)
                 // while doing this.
-#if PORTABLE
+#if WINDOWS_PHONE || SILVERLIGHT
                 ThreadPool.QueueUserWorkItem(_ =>
 #elif NETFX_CORE
                 Task.Run(() =>
@@ -48,28 +41,23 @@ namespace Microsoft.AspNet.SignalR.Infrastructure
                 ThreadPool.UnsafeQueueUserWorkItem(_ =>
 #endif
                 {
-                    CancelCore();
+                    try
+                    {
+                        _cts.Cancel();
+                    }
+                    finally
+                    {
+                        if (Interlocked.CompareExchange(ref _state, State.Cancelled, State.Cancelling) == State.Disposing)
+                        {
+                            _cts.Dispose();
+                            Interlocked.Exchange(ref _state, State.Disposed);
+                        }
+                    }
                 }
 #if !NETFX_CORE
-, state: null
+                , state: null
 #endif
 );
-            }
-        }
-
-        private void CancelCore()
-        {
-            try
-            {
-                _cts.Cancel();
-            }
-            finally
-            {
-                if (Interlocked.CompareExchange(ref _state, State.Cancelled, State.Cancelling) == State.Disposing)
-                {
-                    _cts.Dispose();
-                    Interlocked.Exchange(ref _state, State.Disposed);
-                }
             }
         }
 

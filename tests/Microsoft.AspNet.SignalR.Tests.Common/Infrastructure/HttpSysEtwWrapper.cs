@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace Microsoft.AspNet.SignalR.Tests.Common.Infrastructure
+namespace Microsoft.AspNet.SignalR.FunctionalTests.Infrastructure
 {
     public class HttpSysEtwWrapper : IDisposable
     {

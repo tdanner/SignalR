@@ -141,16 +141,12 @@ namespace Microsoft.AspNet.SignalR.Tests
 
     public class CustomHttpClient : IHttpClient
     {
-        public void Initialize(SignalR.Client.IConnection connection)
-        {
-        }
-
-        public Task<IResponse> Get(string url, Action<Client.Http.IRequest> prepareRequest, bool isLongRunning)
+        public Task<IResponse> Get(string url, Action<Client.Http.IRequest> prepareRequest)
         {
             throw new NotImplementedException();
         }
 
-        public Task<IResponse> Post(string url, Action<Client.Http.IRequest> prepareRequest, IDictionary<string, string> postData, bool isLongRunning)
+        public Task<IResponse> Post(string url, Action<Client.Http.IRequest> prepareRequest, IDictionary<string, string> postData)
         {
             var response = new Mock<IResponse>();
             var request = new Mock<Client.Http.IRequest>();

@@ -51,11 +51,6 @@ namespace Microsoft.AspNet.SignalR.Transports
         public int TotalCount { get; set; }
 
         /// <summary>
-        /// True if the connection is in process of initializing
-        /// </summary>
-        public bool Initializing { get; set; }
-
-        /// <summary>
         /// True if the connection receives a disconnect command.
         /// </summary>
         public bool Disconnect { get; set; }
@@ -66,10 +61,9 @@ namespace Microsoft.AspNet.SignalR.Transports
         public bool Aborted { get; set; }
 
         /// <summary>
-        /// True if the client should try reconnecting.
+        /// True if the connection timed out.
         /// </summary>
-        // This is set when the host is shutting down.
-        public bool Reconnect { get; set; }
+        public bool TimedOut { get; set; }
 
         /// <summary>
         /// Signed token representing the list of groups. Updates on change.
@@ -106,19 +100,13 @@ namespace Microsoft.AspNet.SignalR.Transports
             writer.Write('"');
             writer.Write(',');
 
-            if (Initializing)
-            {
-                jsonWriter.WritePropertyName("S");
-                jsonWriter.WriteValue(1);
-            }
-
             if (Disconnect)
             {
                 jsonWriter.WritePropertyName("D");
                 jsonWriter.WriteValue(1);
             }
 
-            if (Reconnect)
+            if (TimedOut)
             {
                 jsonWriter.WritePropertyName("T");
                 jsonWriter.WriteValue(1);
