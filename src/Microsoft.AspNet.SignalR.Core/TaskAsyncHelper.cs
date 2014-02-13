@@ -14,7 +14,7 @@ using Microsoft.AspNet.SignalR.Infrastructure;
 
 namespace Microsoft.AspNet.SignalR
 {
-    internal static class TaskAsyncHelper
+    public static class TaskAsyncHelper
     {
         private static readonly Task _emptyTask = MakeTask<object>(null);
         private static readonly Task<bool> _trueTask = MakeTask<bool>(true);
