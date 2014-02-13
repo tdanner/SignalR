@@ -6,6 +6,8 @@ using Microsoft.AspNet.SignalR.Json;
 
 namespace Microsoft.AspNet.SignalR.Transports
 {
+    using System;
+
     public class ServerSentEventsTransport : ForeverTransport
     {
         public ServerSentEventsTransport(HostContext context, IDependencyResolver resolver)
@@ -56,6 +58,26 @@ namespace Microsoft.AspNet.SignalR.Transports
         private static Task PerformSend(object state)
         {
             var context = (SendContext)state;
+
+            var binaryMessages = context.State as Messaging.IBinaryMessages;
+
+            if (binaryMessages != null)
+            {
+                foreach (Messaging.Message message in binaryMessages.BinaryMessages)
+                {
+
+                    context.Transport.OutputWriter.Write("binary:");
+
+                    var base64string = Convert.ToBase64String(message.RawBinary);
+                    context.Transport.OutputWriter.Write(base64string);
+
+                    context.Transport.OutputWriter.WriteLine();
+                    context.Transport.OutputWriter.WriteLine();                        
+                    context.Transport.OutputWriter.Flush();
+
+                }
+            }
+
 
             context.Transport.OutputWriter.Write("data: ");
             context.Transport.JsonSerializer.Serialize(context.State, context.Transport.OutputWriter);

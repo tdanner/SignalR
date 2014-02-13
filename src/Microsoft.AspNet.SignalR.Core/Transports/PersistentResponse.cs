@@ -14,7 +14,7 @@ namespace Microsoft.AspNet.SignalR.Transports
     /// <summary>
     /// Represents a response to a connection.
     /// </summary>
-    public sealed class PersistentResponse : IJsonWritable
+    public sealed class PersistentResponse : IJsonWritable, IBinaryMessages
     {
         private readonly Func<Message, bool> _exclude;
         private readonly Action<TextWriter> _writeCursor;
@@ -80,6 +80,36 @@ namespace Microsoft.AspNet.SignalR.Transports
         /// The time the long polling client should wait before reestablishing a connection if no data is received.
         /// </summary>
         public long? LongPollDelay { get; set; }
+
+        public IEnumerable<Message> BinaryMessages 
+        {
+            get
+            {
+                foreach (Message message in AllMessages)
+                {
+                    if (message.IsRawBinary) yield return message;
+                }
+            }
+        } 
+
+        private IEnumerable<Message> AllMessages
+        {
+            get
+            {
+                for (int i = 0; i < Messages.Count; i++)
+                {
+                    ArraySegment<Message> segment = Messages[i];
+                    for (int j = segment.Offset; j < segment.Offset + segment.Count; j++)
+                    {
+                        Message message = segment.Array[j];
+
+                        yield return message;
+                    }
+                }
+                
+            }
+        }
+
 
         /// <summary>
         /// Serializes only the necessary components of the <see cref="PersistentResponse"/> to JSON
@@ -157,14 +187,9 @@ namespace Microsoft.AspNet.SignalR.Transports
 
             bool first = true;
 
-            for (int i = 0; i < Messages.Count; i++)
-            {
-                ArraySegment<Message> segment = Messages[i];
-                for (int j = segment.Offset; j < segment.Offset + segment.Count; j++)
+            foreach (Message message in AllMessages)
                 {
-                    Message message = segment.Array[j];
-
-                    if (!message.IsCommand && !_exclude(message))
+                if (!message.IsCommand && !_exclude(message) && !message.IsRawBinary)
                     {
                         if (binaryWriter != null)
                         {
@@ -188,5 +213,4 @@ namespace Microsoft.AspNet.SignalR.Transports
                 }
             }
         }
-    }
 }

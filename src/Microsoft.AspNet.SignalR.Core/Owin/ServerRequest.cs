@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR.Hosting;
 using Microsoft.Owin;
+using System.IO;
 
 namespace Microsoft.AspNet.SignalR.Owin
 {
@@ -36,6 +37,23 @@ namespace Microsoft.AspNet.SignalR.Owin
             get
             {
                 return (_request.PathBase.ToString() + _request.Path.ToString());
+            }
+        }
+
+        public string ContentType
+        {
+            get
+            {
+                return Headers["Content-Type"];
+            }
+        }
+
+        public int ContentLength
+        {
+            get
+            {
+                var contentLength = Headers["Content-Length"];
+                return int.Parse(contentLength);
             }
         }
 
@@ -100,6 +118,29 @@ namespace Microsoft.AspNet.SignalR.Owin
         {
             IFormCollection form = await _request.ReadFormAsync();
             return new ReadableStringCollectionWrapper(form);
+        }
+
+        public Task<byte[]> ReadRawData()
+        {
+            //var contentLength = ContentLength;
+            //byte[] data;
+            //using (BinaryReader reader = new BinaryReader(Environment.Get<Stream>(OwinConstants.RequestBody)))
+            //{
+            //    data = reader.ReadBytes(contentLength);
+            //}
+
+            //return data;
+
+            return Task<byte[]>.Factory.StartNew(() =>
+            {
+                byte[] data;
+                using (BinaryReader reader = new BinaryReader(Environment.Get<Stream>(OwinConstants.RequestBody)))
+                {
+                    data = reader.ReadBytes(ContentLength);
+                }
+
+                return data;
+            });
         }
     }
 }

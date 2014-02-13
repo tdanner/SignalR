@@ -30,6 +30,16 @@ namespace Microsoft.AspNet.SignalR
         INameValueCollection QueryString { get; }
 
         /// <summary>
+        /// Get the content type from the header.
+        /// </summary>
+        string ContentType { get; }
+
+        /// <summary>
+        /// Get the content length from the header.
+        /// </summary>
+        int ContentLength { get; }
+
+        /// <summary>
         /// Gets the headers for this request.
         /// </summary>
         INameValueCollection Headers { get; }
@@ -50,9 +60,15 @@ namespace Microsoft.AspNet.SignalR
         IDictionary<string, object> Environment { get; }
 
         /// <summary>
-        /// Reads the form of the http request
+        /// Reads the form of the http request when content-type is application/x-www-form-urlencoded
         /// </summary>
         /// <returns></returns>
         Task<INameValueCollection> ReadForm();
+
+        /// <summary>
+        /// Read raw binary data sent when the content-type is application/octet-stream
+        /// </summary>
+        /// <returns></returns>
+        Task<byte[]> ReadRawData();
     }
 }

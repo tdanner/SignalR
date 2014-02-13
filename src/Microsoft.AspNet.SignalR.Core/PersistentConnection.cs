@@ -262,6 +262,13 @@ namespace Microsoft.AspNet.SignalR
                 return TaskAsyncHelper.FromMethod(() => OnReceived(context.Request, connectionId, data).OrEmpty());
             };
 
+            Transport.ReceivedBinary = data =>
+            {
+                Counters.ConnectionMessagesSentTotal.Increment();
+                Counters.ConnectionMessagesSentPerSec.Increment();
+                return TaskAsyncHelper.FromMethod(() => OnReceivedBinary(context.Request, connectionId, data).OrEmpty());
+            };
+
             Transport.Disconnected = () =>
             {
                 return TaskAsyncHelper.FromMethod(() => OnDisconnected(context.Request, connectionId).OrEmpty());
@@ -440,6 +447,18 @@ namespace Microsoft.AspNet.SignalR
         /// <param name="data">The payload sent to the connection.</param>
         /// <returns>A <see cref="Task"/> that completes when the receive operation is complete.</returns>
         protected virtual Task OnReceived(IRequest request, string connectionId, string data)
+        {
+            return TaskAsyncHelper.Empty;
+        }
+
+        /// <summary>
+        /// Called when data is received from a connection.
+        /// </summary>
+        /// <param name="request">The <see cref="IRequest"/> for the current connection.</param>
+        /// <param name="connectionId">The id of the connection sending the data.</param>
+        /// <param name="data">The payload sent to the connection.</param>
+        /// <returns>A <see cref="Task"/> that completes when the receive operation is complete.</returns>
+        protected virtual Task OnReceivedBinary(IRequest request, string connectionId, byte[] data)
         {
             return TaskAsyncHelper.Empty;
         }

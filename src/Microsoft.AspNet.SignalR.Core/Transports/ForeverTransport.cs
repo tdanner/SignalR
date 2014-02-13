@@ -74,6 +74,8 @@ namespace Microsoft.AspNet.SignalR.Transports
 
         public Func<string, Task> Received { get; set; }
 
+        public Func<byte[], Task> ReceivedBinary { get; set; }
+
         public Func<Task> TransportConnected { get; set; }
 
         public Func<Task> Connected { get; set; }
@@ -153,13 +155,33 @@ namespace Microsoft.AspNet.SignalR.Transports
 
         private async Task ProcessSendRequest()
         {
-            INameValueCollection form = await Context.Request.ReadForm();
-            string data = form["data"];
+            //TODO: Don't like that this logic is the same as LongPollingTransport (i.e. There should only be 1 set of logic)
+
+            var contentType = Context.Request.ContentType;
+            if (string.Compare(contentType, "text/plain; charset=utf-8", StringComparison.InvariantCultureIgnoreCase) == 0 ||
+                string.Compare(contentType, "application/x-www-form-urlencoded", StringComparison.InvariantCultureIgnoreCase) == 0)
+            {
+                //string data = Context.Request.Form["data"] ?? Context.Request.QueryString["data"];
+                var form = await Context.Request.ReadForm();
+                string data = form["data"] ?? Context.Request.QueryString["data"];
 
             if (Received != null)
             {
                 await Received(data);
             }
+
+            }
+            else if (string.Compare(contentType, "application/octet-stream", StringComparison.InvariantCultureIgnoreCase) == 0)
+            {
+                var data = await Context.Request.ReadRawData();
+
+                if (ReceivedBinary != null)
+                {
+                    await ReceivedBinary(data);
+                }
+            }
+
+
         }
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Exceptions are flowed to the caller.")]

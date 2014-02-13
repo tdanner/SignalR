@@ -13,9 +13,16 @@ namespace Microsoft.AspNet.SignalR.Transports
     public interface ITransport
     {
         /// <summary>
-        /// Gets or sets a callback that is invoked when the transport receives data.
+        /// Gets or sets a callback that is invoked when the transport receives string data.
         /// </summary>
         Func<string, Task> Received { get; set; }
+
+
+        /// <summary>
+        /// Gets or sets a callback that is invoked when the transport receives binary data.
+        /// </summary>
+        Func<byte[], Task> ReceivedBinary { get; set; }
+
 
         /// <summary>
         /// Gets or sets a callback that is invoked when the initial connection connects to the transport.
